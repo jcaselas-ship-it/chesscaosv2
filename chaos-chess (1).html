@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CAOS REAL — Ajedrez Alternativo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --gold: #c9a84c; --gold-light: #e8c96a;
+    --crimson: #8b1a1a; --crimson-light: #c0392b;
+    --chaos-blue: #4a6fa5; --chaos-purple: #7b5ea7;
+    --board-light: #c8b98a; --board-dark: #6b4c2a;
+    /* Dark mode (default) */
+    --bg-body: #0a0a0f;
+    --bg-panel: linear-gradient(160deg,#141420,#1e1e2e);
+    --bg-panel-solid: #141420;
+    --bg-smoke: #1e1e2e;
+    --bg-ash: #2a2a3e;
+    --text-main: #e8e0d0;
+    --text-silver: #9a9ab0;
+    --border-panel: rgba(201,168,76,0.18);
+    --border-subtle: rgba(201,168,76,0.1);
+    --cell-shadow: rgba(0,0,0,0.85);
+    --modal-bg: linear-gradient(135deg,#141420,#1e1e2e);
+    --shadow-text: 0 2px 0 rgba(0,0,0,0.8);
+    --log-bg: rgba(0,0,0,0.35);
+    --status-bg: rgba(0,0,0,0.32);
+    /* legacy aliases */
+    --obsidian: #0a0a0f; --slate: #141420; --smoke: #1e1e2e; --ash: #2a2a3e;
+    --pearl: #e8e0d0; --silver: #9a9ab0;
+  }
+
+  /* ── LIGHT MODE ── */
+  body.light-mode {
+    --bg-body: #f0ece2;
+    --bg-panel: linear-gradient(160deg,#e8e2d6,#ddd7cc);
+    --bg-panel-solid: #e8e2d6;
+    --bg-smoke: #ddd7cc;
+    --bg-ash: #ccc5b8;
+    --text-main: #2a1f0e;
+    --text-silver: #6b6050;
+    --border-panel: rgba(120,80,20,0.25);
+    --border-subtle: rgba(120,80,20,0.12);
+    --cell-shadow: rgba(60,30,5,0.35);
+    --modal-bg: linear-gradient(135deg,#e8e2d6,#ddd7cc);
+    --shadow-text: 0 1px 0 rgba(255,255,255,0.5);
+    --log-bg: rgba(0,0,0,0.06);
+    --status-bg: rgba(0,0,0,0.06);
+    --obsidian: #f0ece2; --slate: #e8e2d6; --smoke: #ddd7cc; --ash: #ccc5b8;
+    --pearl: #2a1f0e; --silver: #6b6050;
+  }
+
+  body.light-mode::before {
+    background:
+      radial-gradient(ellipse at 15% 15%, rgba(180,120,40,0.12) 0%, transparent 50%),
+      radial-gradient(ellipse at 85% 85%, rgba(74,111,165,0.08) 0%, transparent 50%);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg-body); color: var(--text-main);
+    font-family: 'Cormorant Garamond', serif;
+    min-height:100vh; overflow-x:hidden; position:relative;
+  }
+  body::before {
+    content:''; position:fixed; inset:0;
+    background: radial-gradient(ellipse at 15% 15%, rgba(139,26,26,0.18) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 85%, rgba(74,111,165,0.14) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(123,94,167,0.08) 0%, transparent 70%);
+    pointer-events:none; z-index:0;
+  }
+  .noise {
+    position:fixed; inset:0; opacity:0.03;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size:200px; pointer-events:none; z-index:0;
+  }
+  .container { position:relative; z-index:1; max-width:1140px; margin:0 auto; padding:20px; }
+
+  /* HEADER */
+  header { text-align:center; padding:28px 0 18px; }
+  .title-main {
+    font-family:'Cinzel Decorative',serif; font-size:clamp(2rem,5vw,3.8rem);
+    font-weight:900; color:var(--gold);
+    text-shadow:0 0 40px rgba(201,168,76,0.4),0 2px 0 rgba(0,0,0,0.8);
+    letter-spacing:0.15em; line-height:1;
+    animation:titleGlow 3s ease-in-out infinite alternate;
+  }
+  @keyframes titleGlow {
+    from{text-shadow:0 0 30px rgba(201,168,76,0.3),0 2px 0 rgba(0,0,0,0.8)}
+    to{text-shadow:0 0 60px rgba(201,168,76,0.6),0 0 80px rgba(201,168,76,0.2),0 2px 0 rgba(0,0,0,0.8)}
+  }
+  .title-sub { font-size:0.85rem; font-style:italic; color:var(--text-silver); letter-spacing:0.4em; text-transform:uppercase; margin-top:8px; }
+  .divider { width:200px; height:1px; margin:14px auto; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+
+  /* LAYOUT */
+  .game-layout { display:grid; grid-template-columns:1fr auto 1fr; gap:18px; align-items:start; margin-top:8px; }
+
+  /* SIDE PANELS */
+  .side-panel {
+    background:var(--bg-panel);
+    border:1px solid var(--border-panel); border-radius:6px; padding:16px;
+    position:relative; overflow:hidden;
+  }
+  .side-panel::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  .panel-title { font-family:'Cinzel Decorative',serif; font-size:0.58rem; letter-spacing:0.2em; color:var(--gold); text-transform:uppercase; margin-bottom:10px; opacity:0.85; }
+  .turn-indicator { display:flex; align-items:center; gap:10px; padding:9px 10px; border:1px solid rgba(201,168,76,0.15); border-radius:4px; margin-bottom:12px; background:rgba(0,0,0,0.3); transition:border-color 0.3s; }
+  .turn-gem { width:18px; height:18px; border-radius:50%; border:2px solid var(--gold); flex-shrink:0; box-shadow:0 0 8px currentColor; }
+  .turn-gem.white { background:radial-gradient(circle at 35% 35%,#fff,#c0c0b8); color:rgba(255,255,255,0.5); }
+  .turn-gem.black { background:radial-gradient(circle at 35% 35%,#444,#0d0d0d); color:rgba(0,0,0,0.5); }
+  .turn-text { font-size:0.82rem; color:var(--pearl); font-weight:300; }
+  .chaos-meter { margin-bottom:12px; }
+  .chaos-bar { height:6px; background:var(--ash); border-radius:3px; overflow:hidden; margin-top:5px; border:1px solid rgba(201,168,76,0.1); }
+  .chaos-fill { height:100%; background:linear-gradient(90deg,var(--chaos-blue),var(--chaos-purple),var(--crimson-light)); border-radius:3px; transition:width 0.5s ease; position:relative; }
+  .chaos-fill::after { content:''; position:absolute; right:0; top:0; bottom:0; width:4px; background:white; opacity:0.6; filter:blur(2px); animation:pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:0.6}50%{opacity:1} }
+  .spell-btn { background:linear-gradient(135deg,rgba(201,168,76,0.04),rgba(201,168,76,0.1)); border:1px solid rgba(201,168,76,0.2); color:var(--pearl); padding:7px 10px; border-radius:4px; cursor:pointer; font-family:'Cormorant Garamond',serif; font-size:0.78rem; text-align:left; transition:all 0.2s; display:flex; align-items:center; gap:7px; width:100%; margin-bottom:5px; }
+  .spell-btn:hover:not(:disabled) { background:linear-gradient(135deg,rgba(201,168,76,0.14),rgba(201,168,76,0.24)); border-color:var(--gold); box-shadow:-3px 0 0 var(--gold); transform:translateX(2px); }
+  .spell-btn:disabled { opacity:0.32; cursor:not-allowed; }
+  .spell-btn.active { background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.32)); border-color:var(--gold); animation:activeSpell 1s ease-in-out infinite alternate; }
+  @keyframes activeSpell { from{box-shadow:0 0 8px rgba(201,168,76,0.2)} to{box-shadow:0 0 18px rgba(201,168,76,0.5),-3px 0 0 var(--gold)} }
+  .spell-cost { background:var(--gold); color:var(--obsidian); font-size:0.58rem; padding:1px 5px; border-radius:2px; font-weight:700; font-family:'Cinzel Decorative',serif; margin-left:auto; flex-shrink:0; }
+  .log-box { max-height:140px; overflow-y:auto; background:rgba(0,0,0,0.35); border:1px solid rgba(201,168,76,0.08); border-radius:3px; padding:7px; scrollbar-width:thin; scrollbar-color:var(--gold) transparent; }
+  .log-entry { font-size:0.7rem; padding:2px 0; border-bottom:1px solid rgba(255,255,255,0.04); color:var(--text-silver); font-style:italic; animation:fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none} }
+  .log-entry.special{color:var(--gold-light)} .log-entry.capture{color:#e07070}
+  .captured-pieces { display:flex; flex-wrap:wrap; gap:2px; min-height:26px; padding:4px; background:rgba(0,0,0,0.28); border:1px solid rgba(201,168,76,0.07); border-radius:3px; margin-top:7px; }
+
+  /* BOARD */
+  .board-wrap { position:relative; }
+  .board-container {
+    position:relative; padding:28px;
+    background:linear-gradient(145deg,var(--bg-panel-solid),var(--bg-body));
+    border:1px solid rgba(201,168,76,0.28); border-radius:6px;
+    box-shadow:0 0 60px rgba(0,0,0,0.85),inset 0 0 30px rgba(0,0,0,0.5);
+  }
+  .board-container::before,.board-container::after { content:'✦'; position:absolute; color:var(--gold); opacity:0.35; font-size:0.9rem; }
+  .board-container::before{top:8px;left:8px} .board-container::after{bottom:8px;right:8px}
+  #chessboard { display:grid; grid-template-columns:repeat(8,1fr); border:2px solid rgba(201,168,76,0.4); box-shadow:0 0 30px rgba(0,0,0,0.9); }
+  .cell { width:66px; height:66px; display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:filter 0.12s; user-select:none; overflow:hidden; }
+  .cell.light{background:var(--board-light)} .cell.dark{background:var(--board-dark)}
+  .cell:hover{filter:brightness(1.18)}
+  .cell.selected { background:rgba(201,168,76,0.52)!important; box-shadow:inset 0 0 0 3px var(--gold),0 0 14px rgba(201,168,76,0.4); z-index:2; }
+  .cell.valid-move::after { content:''; position:absolute; width:20px; height:20px; border-radius:50%; background:rgba(201,168,76,0.55); border:2px solid rgba(201,168,76,0.85); box-shadow:0 0 8px rgba(201,168,76,0.5); }
+  .cell.valid-capture::after { content:''; position:absolute; inset:3px; background:transparent; border:3px solid rgba(192,57,43,0.85); box-shadow:inset 0 0 10px rgba(192,57,43,0.3); }
+  .cell.last-move{background:rgba(100,149,237,0.22)!important}
+  .cell.chaos-effect{animation:chaosFlash 0.6s ease-out}
+  @keyframes chaosFlash{0%{filter:brightness(3) saturate(3)}100%{filter:brightness(1) saturate(1)}}
+  .cell.frozen::before { content:'❄'; position:absolute; font-size:0.85rem; top:2px; right:2px; z-index:3; filter:drop-shadow(0 0 4px cyan); }
+
+  /* Necromancer ENCHANTED pawn — purple skull aura */
+  .cell.necro-pawn::after {
+    content: '☠';
+    position: absolute;
+    top: 1px; left: 50%; transform: translateX(-50%);
+    font-size: 0.75rem;
+    z-index: 4;
+    color: #cc66ff;
+    filter: drop-shadow(0 0 4px #8833cc);
+    animation: skullPulse 1.2s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  @keyframes skullPulse {
+    from { opacity: 0.7; transform: translateX(-50%) scale(0.9); }
+    to   { opacity: 1;   transform: translateX(-50%) scale(1.15); }
+  }
+  .cell.necro-pawn .piece svg {
+    filter: drop-shadow(0 0 6px #9933ff) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    animation: necroPawnGlow 1.5s ease-in-out infinite alternate;
+  }
+  @keyframes necroPawnGlow {
+    from { filter: drop-shadow(0 0 4px #6600cc) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+    to   { filter: drop-shadow(0 0 10px #cc44ff) drop-shadow(0 0 18px #6600cc) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+  }
+
+  /* Necromancer CONVERTED pieces — green soul glow */
+  .cell.necro-converted .piece svg {
+    filter: drop-shadow(0 0 5px #44cc88) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    animation: necroGlow 2s ease-in-out infinite alternate;
+  }
+  @keyframes necroGlow {
+    from { filter: drop-shadow(0 0 3px #228855) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+    to   { filter: drop-shadow(0 0 8px #55ffaa) drop-shadow(0 0 14px #228855) drop-shadow(0 2px 4px rgba(0,0,0,0.8)); }
+  }
+  .cell.necro-converted::before {
+    content: '✦';
+    position: absolute;
+    bottom: 1px; right: 2px;
+    font-size: 0.55rem;
+    color: #55ffaa;
+    filter: drop-shadow(0 0 3px #228855);
+    animation: convertedStar 2s ease-in-out infinite alternate;
+    pointer-events: none; z-index: 4;
+  }
+  @keyframes convertedStar {
+    from { opacity: 0.5; }
+    to   { opacity: 1; }
+  }
+  .piece { width:54px; height:54px; display:flex; align-items:center; justify-content:center; position:relative; z-index:1; }
+  .piece svg { width:50px; height:50px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.8)); transition:transform 0.15s; }
+  .cell:hover .piece svg{transform:scale(1.1) translateY(-1px)}
+  .coords-col { position:absolute; left:8px; top:28px; display:flex; flex-direction:column; height:calc(8 * 66px); justify-content:space-around; }
+  .coords-row { position:absolute; bottom:8px; left:28px; display:flex; width:calc(8 * 66px); justify-content:space-around; }
+  .coord{font-size:0.58rem;color:var(--gold);opacity:0.45;font-family:'Cinzel Decorative',serif}
+
+  /* STATUS */
+  .status-bar { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:7px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(201,168,76,0.1); border-radius:4px; font-size:0.72rem; color:var(--text-silver); font-style:italic; }
+  .status-message{color:var(--gold-light)}
+  .btn-restart-inline { background:transparent; border:1px solid rgba(201,168,76,0.32); color:var(--gold); padding:4px 13px; font-family:'Cinzel Decorative',serif; font-size:0.55rem; letter-spacing:0.1em; cursor:pointer; border-radius:3px; transition:all 0.2s; white-space:nowrap; }
+  .btn-restart-inline:hover{background:rgba(201,168,76,0.1);border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,0.2)}
+
+  /* FLOATING */
+  .floating-actions { position:fixed; bottom:22px; right:22px; display:flex; flex-direction:column; gap:10px; z-index:50; }
+  .fab { width:46px; height:46px; border-radius:50%; background:var(--slate); border:1px solid rgba(201,168,76,0.35); color:var(--gold); cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:all 0.22s; box-shadow:0 4px 20px rgba(0,0,0,0.6); position:relative; }
+  .fab:hover { background:rgba(201,168,76,0.12); box-shadow:0 0 20px rgba(201,168,76,0.35),0 4px 20px rgba(0,0,0,0.6); transform:translateY(-2px); }
+  .fab-tooltip { position:absolute; right:54px; top:50%; transform:translateY(-50%); background:var(--slate); border:1px solid rgba(201,168,76,0.25); color:var(--pearl); font-size:0.7rem; font-family:'Cormorant Garamond',serif; padding:4px 9px; border-radius:3px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+  .fab:hover .fab-tooltip{opacity:1}
+
+  /* MODALS */
+  .overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:100; align-items:center; justify-content:center; backdrop-filter:blur(8px); }
+  .overlay.show{display:flex}
+  .modal { background:var(--modal-bg); border:1px solid rgba(201,168,76,0.4); border-radius:8px; padding:40px; max-width:440px; text-align:center; box-shadow:0 0 80px rgba(201,168,76,0.12); animation:modalIn 0.35s ease; position:relative; overflow:hidden; }
+  .modal::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+  @keyframes modalIn{from{transform:scale(0.85) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+  .modal-icon{font-size:3.8rem;margin-bottom:14px}
+  .modal h2{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:1.7rem;margin-bottom:10px;text-shadow:0 0 30px rgba(201,168,76,0.5)}
+  .modal p{color:var(--text-silver);font-size:1rem;font-style:italic;margin-bottom:20px;line-height:1.6}
+  .btn-gold { background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.28)); border:1px solid var(--gold); color:var(--gold); padding:11px 28px; font-family:'Cinzel Decorative',serif; font-size:0.72rem; letter-spacing:0.15em; cursor:pointer; border-radius:4px; transition:all 0.2s; }
+  .btn-gold:hover{background:linear-gradient(135deg,rgba(201,168,76,0.25),rgba(201,168,76,0.45));box-shadow:0 0 20px rgba(201,168,76,0.3);transform:translateY(-1px)}
+
+  /* CONFIRM */
+  #confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.72); z-index:200; align-items:center; justify-content:center; backdrop-filter:blur(4px); }
+  #confirm-overlay.show{display:flex}
+  .confirm-modal { background:var(--modal-bg); border:1px solid rgba(201,168,76,0.32); border-radius:6px; padding:30px 34px; text-align:center; box-shadow:0 0 50px rgba(0,0,0,0.8); animation:modalIn 0.25s ease; max-width:320px; }
+  .confirm-modal .confirm-title{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:0.85rem;letter-spacing:0.1em;margin-bottom:10px}
+  .confirm-modal p{font-family:'Cormorant Garamond',serif;font-size:0.95rem;font-style:italic;color:var(--pearl);margin-bottom:20px;line-height:1.6}
+  .confirm-btns{display:flex;gap:10px;justify-content:center}
+  .confirm-btns button{padding:8px 20px;border-radius:3px;font-family:'Cinzel Decorative',serif;font-size:0.58rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.2s;border:1px solid}
+  .btn-confirm-yes{background:rgba(139,26,26,0.18);border-color:rgba(192,57,43,0.6)!important;color:#e07070}
+  .btn-confirm-yes:hover{background:rgba(139,26,26,0.38)}
+  .btn-confirm-no{background:rgba(201,168,76,0.07);border-color:rgba(201,168,76,0.28)!important;color:var(--gold)}
+  .btn-confirm-no:hover{background:rgba(201,168,76,0.16)}
+
+  /* INFO MODAL */
+  .info-modal{max-width:640px;text-align:left;padding:36px 40px}
+  .info-modal h2{text-align:center;margin-bottom:6px;font-size:1.5rem}
+  .info-modal .divider{margin:14px 0}
+  .info-section{margin-bottom:22px}
+  .info-section h3{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:0.68rem;letter-spacing:0.18em;margin-bottom:10px;text-transform:uppercase}
+  .info-section p{color:var(--text-silver);font-size:0.88rem;line-height:1.7;margin:0 0 6px;font-style:italic}
+  .spell-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .spell-card{background:rgba(0,0,0,0.3);border:1px solid rgba(201,168,76,0.15);border-radius:5px;padding:12px 14px;position:relative;overflow:hidden}
+  .spell-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:0.5}
+  .spell-card-title{font-family:'Cinzel Decorative',serif;color:var(--gold-light);font-size:0.6rem;letter-spacing:0.1em;margin-bottom:5px}
+  .spell-card p{color:var(--text-silver);font-size:0.78rem;line-height:1.5;margin:0}
+  .spell-card .cost-badge{display:inline-block;background:var(--gold);color:var(--obsidian);font-size:0.58rem;padding:1px 6px;border-radius:2px;font-family:'Cinzel Decorative',serif;font-weight:700;margin-left:5px;vertical-align:middle}
+  .rules-list{list-style:none;padding:0}
+  .rules-list li{color:var(--text-silver);font-size:0.85rem;font-style:italic;padding:4px 0 4px 16px;position:relative;line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.04)}
+  .rules-list li::before{content:'◆';position:absolute;left:0;color:var(--gold);font-size:0.5rem;top:7px}
+  .rules-list .hl{color:var(--gold-light)}
+  .info-close{position:absolute;top:14px;right:16px;background:transparent;border:none;color:var(--text-silver);font-size:1.4rem;cursor:pointer;transition:color 0.2s;line-height:1}
+  .info-close:hover{color:var(--gold)}
+
+  /* CUSTOM PANEL */
+  .custom-panel { position:fixed; right:-340px; top:0; bottom:0; width:320px; z-index:90; background:linear-gradient(180deg,var(--bg-panel-solid),var(--bg-smoke)); border-left:1px solid rgba(201,168,76,0.22); padding:24px 18px; overflow-y:auto; transition:right 0.35s cubic-bezier(0.4,0,0.2,1); box-shadow:-10px 0 40px rgba(0,0,0,0.7); scrollbar-width:thin; scrollbar-color:rgba(201,168,76,0.3) transparent; }
+  .custom-panel.open{right:0}
+  .custom-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+  .custom-panel h3{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:0.8rem;letter-spacing:0.18em;text-align:center;margin-bottom:6px}
+  .panel-divider{width:100%;height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4),transparent);margin:14px 0}
+  .custom-section-title{font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;opacity:0.85}
+
+  /* THEME GRID */
+  .theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .theme-btn{border-radius:5px;overflow:hidden;border:2px solid transparent;cursor:pointer;transition:all 0.2s;background:none;padding:0;position:relative}
+  .theme-btn.active{border-color:var(--gold);box-shadow:0 0 10px rgba(201,168,76,0.35)}
+  .theme-btn:hover:not(.active){border-color:rgba(201,168,76,0.4);transform:translateY(-2px)}
+  .theme-preview{display:grid;grid-template-columns:repeat(4,1fr);height:44px}
+  .theme-preview span{display:block}
+  .theme-label{font-family:'Cinzel Decorative',serif;font-size:0.5rem;letter-spacing:0.05em;color:var(--text-silver);text-align:center;padding:5px 2px 3px;background:var(--ash);border-top:1px solid rgba(201,168,76,0.1)}
+  .theme-btn.active .theme-label{color:var(--gold)}
+
+  /* PIECE SET GRID — larger cards */
+  .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+  .set-btn{background:rgba(0,0,0,0.35);border:2px solid rgba(201,168,76,0.15);border-radius:6px;padding:10px 8px 8px;cursor:pointer;transition:all 0.22s;text-align:center;position:relative;overflow:hidden}
+  .set-btn::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--gold);opacity:0;transition:opacity 0.2s}
+  .set-btn:hover:not(.active){border-color:rgba(201,168,76,0.45);background:rgba(201,168,76,0.06);transform:translateY(-2px)}
+  .set-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.1);box-shadow:0 0 14px rgba(201,168,76,0.22)}
+  .set-btn.active::before{opacity:0.6}
+  .set-preview{display:flex;justify-content:center;gap:2px;margin-bottom:6px;align-items:flex-end}
+  .set-name{font-family:'Cinzel Decorative',serif;font-size:0.52rem;letter-spacing:0.08em;color:var(--text-silver);display:block}
+  .set-desc{font-family:'Cormorant Garamond',serif;font-size:0.65rem;font-style:italic;color:rgba(154,154,176,0.7);display:block;margin-top:2px}
+  .set-btn.active .set-name{color:var(--gold)}
+
+  /* COLOUR PALETTE */
+  .style-grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+  .color-btn{background:rgba(0,0,0,0.3);border:2px solid rgba(201,168,76,0.15);border-radius:5px;padding:10px 8px;cursor:pointer;transition:all 0.2s;text-align:center}
+  .color-btn:hover:not(.active){border-color:rgba(201,168,76,0.4);background:rgba(201,168,76,0.05);transform:translateY(-2px)}
+  .color-btn.active{border-color:var(--gold);background:rgba(201,168,76,0.1);box-shadow:0 0 10px rgba(201,168,76,0.2)}
+  .color-swatch{display:flex;gap:4px;justify-content:center;margin-bottom:5px}
+  .swatch{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,0.2)}
+  .color-name{font-family:'Cinzel Decorative',serif;font-size:0.5rem;letter-spacing:0.08em;color:var(--text-silver)}
+  .color-btn.active .color-name{color:var(--gold)}
+
+  .custom-close{position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--text-silver);font-size:1.3rem;cursor:pointer;transition:color 0.2s}
+  .custom-close:hover{color:var(--gold)}
+  .panel-backdrop{display:none;position:fixed;inset:0;z-index:89;background:rgba(0,0,0,0.3)}
+  .panel-backdrop.show{display:block}
+
+
+  /* ── RESPONSIVE ── */
+  /* Tablet landscape */
+  @media(max-width:1100px){
+    .container{max-width:100%;padding:12px}
+    .game-layout{gap:12px}
+  }
+
+  /* Tablet portrait / large phone */
+  @media(max-width:900px){
+    .game-layout{
+      grid-template-columns:1fr;
+      grid-template-rows:auto auto auto;
+    }
+    /* Board goes first on mobile */
+    .board-wrap{order:-1}
+    .side-panel{order:1}
+
+    /* Two-column side panels below board */
+    .game-layout > .side-panel:first-child,
+    .game-layout > .side-panel:last-child{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    .game-layout > .side-panel > .panel-title:first-child,
+    .game-layout > .side-panel > .turn-indicator,
+    .game-layout > .side-panel > .chaos-meter{
+      grid-column:1/-1;
+    }
+
+    /* Board sizing */
+    .cell{width:calc((min(100vw,520px) - 80px)/8);height:calc((min(100vw,520px) - 80px)/8)}
+    .piece{width:calc((min(100vw,520px) - 80px)/8 - 4px);height:calc((min(100vw,520px) - 80px)/8 - 4px)}
+    .piece svg{width:100%;height:100%}
+    .coords-col{height:calc(8 * ((min(100vw,520px) - 80px)/8));top:22px}
+    .coords-row{width:calc(8 * ((min(100vw,520px) - 80px)/8));left:22px}
+    .board-container{padding:22px}
+
+    /* Custom panel full width on mobile */
+    .custom-panel{width:100%;right:-100%}
+    .custom-panel.open{right:0}
+  }
+
+  /* Phone */
+  @media(max-width:520px){
+    .cell{width:calc((100vw - 60px)/8);height:calc((100vw - 60px)/8)}
+    .piece{width:calc((100vw - 60px)/8 - 2px);height:calc((100vw - 60px)/8 - 2px)}
+    .coords-col{height:calc(8 * ((100vw - 60px)/8));top:16px}
+    .coords-row{width:calc(8 * ((100vw - 60px)/8));left:16px}
+    .board-container{padding:16px}
+    .title-main{font-size:1.6rem}
+    .title-sub{font-size:0.7rem;letter-spacing:0.2em}
+    .log-box{max-height:80px}
+    .floating-actions{bottom:12px;right:12px;gap:8px}
+    .fab{width:40px;height:40px;font-size:1rem}
+    .status-bar{font-size:0.65rem;padding:5px 8px}
+  }
+
+  /* Ensure board is centered on all sizes */
+  .board-wrap{display:flex;flex-direction:column;align-items:center}
+  .board-container{width:fit-content}
+  #chessboard{touch-action:none}
+
+
+  /* ── LIGHT/DARK TOGGLE ── */
+  #theme-toggle { font-size:1.2rem; }
+  body.light-mode .side-panel { box-shadow:0 2px 12px rgba(120,80,20,0.1); }
+  body.light-mode .board-container { box-shadow:0 0 40px rgba(120,80,20,0.2); }
+  body.light-mode .log-entry { border-bottom-color:rgba(0,0,0,0.06); }
+  body.light-mode .spell-btn { background:rgba(120,80,20,0.05); border-color:rgba(120,80,20,0.2); color:var(--text-main); }
+  body.light-mode .spell-btn:hover:not(:disabled) { background:rgba(120,80,20,0.12); }
+  body.light-mode .chaos-bar { background:rgba(0,0,0,0.1); }
+  body.light-mode .turn-indicator { background:rgba(255,255,255,0.4); }
+  body.light-mode .captured-pieces { background:rgba(0,0,0,0.05); }
+  body.light-mode .log-box { background:rgba(0,0,0,0.05); }
+  body.light-mode .status-bar { background:rgba(0,0,0,0.06); }
+  body.light-mode .noise { opacity:0.015; }
+  body.light-mode .fab { background:rgba(200,185,138,0.85); box-shadow:0 4px 16px rgba(120,80,20,0.25); }
+  body.light-mode .fab:hover { background:rgba(201,168,76,0.3); }
+  body.light-mode .spell-cost { background:var(--gold); }
+  body.light-mode .panel-title { opacity:1; }
+  body.light-mode #chessboard { box-shadow:0 0 20px rgba(120,80,20,0.3); }
+
+  /* ── COPYRIGHT BAR ── */
+  .copyright-bar {
+    position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+    display:flex; align-items:center; gap:6px;
+    font-family:'Cormorant Garamond',serif; font-size:0.72rem;
+    color:var(--text-silver); opacity:0.55;
+    z-index:40; pointer-events:none;
+    transition:opacity 0.3s; white-space:nowrap;
+    letter-spacing:0.05em;
+  }
+  .copyright-bar:hover { opacity:1; pointer-events:auto; }
+  .copyright-name { color:var(--gold); font-style:italic; }
+  .copyright-sep { color:var(--text-silver); margin:0 2px; }
+  .copyright-claude {
+    font-family:'Cinzel Decorative',serif; font-size:0.58rem;
+    color:var(--gold); letter-spacing:0.1em;
+  }
+
+  /* ── EASTER EGG TOAST ── */
+  .easter-toast {
+    position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-16px);
+    background:linear-gradient(135deg,rgba(60,0,100,0.97),rgba(30,0,60,0.97));
+    border:1px solid rgba(180,80,255,0.55);
+    color:#cc88ff; font-family:'Cinzel Decorative',serif;
+    font-size:0.7rem; letter-spacing:0.15em;
+    padding:11px 26px; border-radius:4px;
+    box-shadow:0 0 30px rgba(140,0,220,0.5);
+    opacity:0; pointer-events:none;
+    transition:opacity 0.4s ease, transform 0.4s ease;
+    z-index:300; text-align:center;
+  }
+  .easter-toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* ── BOARD MIRROR easter egg ── */
+  #chessboard.mirrored {
+    transform:rotate(180deg);
+    transition:transform 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+  #chessboard.mirrored .piece { transform:rotate(180deg); }
+  .board-mirrored-label {
+    position:absolute; top:-26px; left:50%; transform:translateX(-50%);
+    font-family:'Cinzel Decorative',serif; font-size:0.52rem;
+    color:rgba(180,80,255,0.85); letter-spacing:0.15em;
+    white-space:nowrap; pointer-events:none;
+    animation:fadeIn 0.5s ease;
+  }
+
+  /* ── SHUFFLE ANIMATION ── */
+  @keyframes cellPop {
+    0%   { transform:scale(1) rotate(0deg); filter:brightness(1); }
+    35%  { transform:scale(0.1) rotate(180deg); filter:brightness(3) hue-rotate(120deg); }
+    70%  { transform:scale(1.2) rotate(350deg); filter:brightness(1.5) hue-rotate(240deg); }
+    100% { transform:scale(1) rotate(360deg); filter:brightness(1); }
+  }
+  .cell.shuffling { animation:cellPop 0.65s cubic-bezier(0.4,0,0.2,1) both; }
+
+  /* ── PROMOTION CHOICES ── */
+  .promo-btn {
+    background: linear-gradient(145deg, rgba(201,168,76,0.08), rgba(201,168,76,0.18));
+    border: 2px solid rgba(201,168,76,0.3);
+    border-radius: 6px; padding: 10px 8px; cursor: pointer;
+    transition: all 0.2s; display:flex; flex-direction:column; align-items:center; gap:5px;
+    min-width: 72px;
+  }
+  .promo-btn:hover {
+    border-color: var(--gold); background: rgba(201,168,76,0.25);
+    transform: translateY(-3px); box-shadow: 0 0 14px rgba(201,168,76,0.35);
+  }
+  .promo-btn svg { width:44px; height:44px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.7)); }
+  .promo-btn span { font-family:'Cinzel Decorative',serif; font-size:0.5rem; letter-spacing:0.08em; color:var(--gold); }
+
+  /* ── JAQUE: King in check glow ── */
+  .cell.in-check {
+    background: rgba(192,40,40,0.55) !important;
+    box-shadow: inset 0 0 0 3px #ff4444, 0 0 18px rgba(255,60,60,0.7) !important;
+    z-index: 2;
+    animation: checkPulse 0.9s ease-in-out infinite alternate;
+  }
+  @keyframes checkPulse {
+    from { box-shadow: inset 0 0 0 3px #ff4444, 0 0 12px rgba(255,60,60,0.6); }
+    to   { box-shadow: inset 0 0 0 3px #ff9999, 0 0 28px rgba(255,80,80,0.9); }
+  }
+  .cell.in-check .piece svg {
+    filter: drop-shadow(0 0 8px #ff4444) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+  }
+
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+  <header>
+    <div class="title-main"><span id="easter-caos" onclick="easterCaos()" style="cursor:pointer" title="...">CAOS</span> REAL</div>
+    <div class="title-sub">Ajedrez de los Reinos Arcanos</div>
+    <div class="divider"></div>
+  </header>
+
+  <div class="game-layout">
+    <!-- Panel Blancas -->
+    <div class="side-panel">
+      <div class="panel-title">⚜ Reino de la Luz</div>
+      <div class="turn-indicator" id="turn-white">
+        <div class="turn-gem white"></div>
+        <div class="turn-text">Blancas · En espera</div>
+      </div>
+      <div class="chaos-meter">
+        <div class="panel-title" style="margin-bottom:4px">⚡ Maná de Caos</div>
+        <div class="chaos-bar"><div class="chaos-fill" id="mana-white" style="width:30%"></div></div>
+      </div>
+      <div class="panel-title">🔮 Hechizos</div>
+      <div id="spells-white">
+        <button class="spell-btn" data-spell="teleport" data-player="white" onclick="activateSpell('teleport','white')">✨ Teletransporte <span class="spell-cost">3</span></button>
+        <button class="spell-btn" data-spell="freeze" data-player="white" onclick="activateSpell('freeze','white')">❄️ Congelar Pieza <span class="spell-cost">4</span></button>
+        <button class="spell-btn" data-spell="revive" data-player="white" onclick="activateSpell('revive','white')">💀 Revivir Peón <span class="spell-cost">5</span></button>
+        <button class="spell-btn" data-spell="necro" data-player="white" onclick="activateSpell('necro','white')">💀 Peón Nigromante <span class="spell-cost">4</span></button>
+      </div>
+      <div style="margin-top:10px"><div class="panel-title">☠ Capturadas</div><div class="captured-pieces" id="captured-white"></div></div>
+      <div style="margin-top:10px"><div class="panel-title">📜 Crónicas</div><div class="log-box" id="log-white"></div></div>
+    </div>
+
+    <!-- TABLERO -->
+    <div class="board-wrap">
+      <div class="board-container">
+        <div class="coords-col">
+          <span class="coord">8</span><span class="coord">7</span><span class="coord">6</span>
+          <span class="coord">5</span><span class="coord">4</span><span class="coord">3</span>
+          <span class="coord">2</span><span class="coord">1</span>
+        </div>
+        <div id="chessboard"></div>
+        <div class="coords-row">
+          <span class="coord">a</span><span class="coord">b</span><span class="coord">c</span>
+          <span class="coord">d</span><span class="coord">e</span><span class="coord">f</span>
+          <span class="coord">g</span><span class="coord">h</span>
+        </div>
+      </div>
+      <div class="status-bar">
+        <span id="status-msg" class="status-message">Selecciona una pieza blanca</span>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="move-count" style="color:var(--text-silver)">Turno 1</span>
+          <button class="btn-restart-inline" onclick="confirmRestart()">↺ Reiniciar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel Negras -->
+    <div class="side-panel">
+      <div class="panel-title">⚜ Reino de las Sombras</div>
+      <div class="turn-indicator" id="turn-black">
+        <div class="turn-gem black"></div>
+        <div class="turn-text">Negras · En espera</div>
+      </div>
+      <div class="chaos-meter">
+        <div class="panel-title" style="margin-bottom:4px">⚡ Maná de Caos</div>
+        <div class="chaos-bar"><div class="chaos-fill" id="mana-black" style="width:30%"></div></div>
+      </div>
+      <div class="panel-title">🔮 Hechizos</div>
+      <div id="spells-black">
+        <button class="spell-btn" data-spell="teleport" data-player="black" onclick="activateSpell('teleport','black')">✨ Teletransporte <span class="spell-cost">3</span></button>
+        <button class="spell-btn" data-spell="freeze" data-player="black" onclick="activateSpell('freeze','black')">❄️ Congelar Pieza <span class="spell-cost">4</span></button>
+        <button class="spell-btn" data-spell="revive" data-player="black" onclick="activateSpell('revive','black')">💀 Revivir Peón <span class="spell-cost">5</span></button>
+        <button class="spell-btn" data-spell="necro" data-player="black" onclick="activateSpell('necro','black')">💀 Peón Nigromante <span class="spell-cost">4</span></button>
+      </div>
+      <div style="margin-top:10px"><div class="panel-title">☠ Capturadas</div><div class="captured-pieces" id="captured-black"></div></div>
+      <div style="margin-top:10px"><div class="panel-title">📜 Crónicas</div><div class="log-box" id="log-black"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- FLOATING BUTTONS -->
+<div class="floating-actions">
+  <button class="fab" onclick="openInfo()"><span>ℹ</span><span class="fab-tooltip">Información y hechizos</span></button>
+  <button class="fab" id="theme-toggle" onclick="toggleLightDark()" title="Modo claro/oscuro"><span id="theme-icon">☀</span><span class="fab-tooltip">Modo claro/oscuro</span></button>
+  <button class="fab" onclick="openCustom()"><span>🎨</span><span class="fab-tooltip">Personalizar tablero</span></button>
+</div>
+
+<!-- COPYRIGHT -->
+<div class="copyright-bar">
+  <span>© 2025</span>
+  <span class="copyright-name">Jcaselas</span>
+  <span class="copyright-sep">+</span>
+  <span class="copyright-claude">Claude</span>
+</div>
+
+<!-- EASTER EGG TOAST -->
+<div class="easter-toast" id="easter-toast"></div>
+
+<div class="panel-backdrop" id="panel-backdrop" onclick="closeCustom()"></div>
+
+<!-- CUSTOM PANEL -->
+<div class="custom-panel" id="custom-panel">
+  <button class="custom-close" onclick="closeCustom()">✕</button>
+  <h3>✦ Personalización</h3>
+  <div class="panel-divider"></div>
+
+  <div class="custom-section-title">🏰 Tema del tablero</div>
+  <div class="theme-grid" id="theme-grid"></div>
+
+  <div class="panel-divider"></div>
+
+  <div class="custom-section-title">♟ Set de piezas</div>
+  <div class="set-grid" id="set-grid"></div>
+
+  <div class="panel-divider"></div>
+
+  <div class="custom-section-title">🎨 Paleta de color</div>
+  <div class="style-grid-2col" id="color-grid"></div>
+</div>
+
+<!-- INFO MODAL -->
+<div class="overlay" id="info-overlay">
+  <div class="modal info-modal">
+    <button class="info-close" onclick="closeInfo()">✕</button>
+    <h2 style="font-family:'Cinzel Decorative',serif;color:var(--gold)">⚔ Caos Real</h2>
+    <p style="text-align:center;color:var(--text-silver);font-style:italic;margin-bottom:4px">Ajedrez de los Reinos Arcanos</p>
+    <div class="divider"></div>
+    <div class="info-section">
+      <h3>📖 Reglas generales</h3>
+      <ul class="rules-list">
+        <li>El movimiento sigue las reglas <span class="hl">estándar del ajedrez clásico</span>.</li>
+        <li>Los peones pueden avanzar <span class="hl">1 o 2 casillas en cualquier turno</span>.</li>
+        <li>Capturar una pieza otorga <span class="hl">Maná de Caos</span> según su valor.</li>
+        <li>El objetivo es <span class="hl">capturar el Rey enemigo</span> directamente.</li>
+        <li>Un peón que llega al extremo se <span class="hl">corona como Reina automáticamente</span>.</li>
+        <li>Cada movimiento otorga <span class="hl">+0.5 de maná</span>.</li>
+        <li>El <span class="hl">enroque</span> está disponible si el Rey y la Torre no se han movido y no hay piezas entre ellos ni el Rey está en jaque.</li>
+      </ul>
+    </div>
+    <div class="info-section">
+      <h3>🔮 Hechizos arcanos</h3>
+      <div class="spell-info-grid">
+        <div class="spell-card"><div class="spell-card-title">✨ Teletransporte <span class="cost-badge">3</span></div><p>Mueve cualquiera de tus piezas a cualquier casilla vacía del tablero sin restricciones.</p></div>
+        <div class="spell-card"><div class="spell-card-title">❄️ Congelar Pieza <span class="cost-badge">4</span></div><p>Inmoviliza una pieza enemiga durante 2 turnos completos.</p></div>
+        <div class="spell-card"><div class="spell-card-title">💀 Revivir Peón <span class="cost-badge">5</span></div><p>Devuelve el último peón perdido al tablero en cualquier casilla vacía.</p></div>
+        <div class="spell-card"><div class="spell-card-title">💀 Peón Nigromante <span class="cost-badge">4</span></div><p>Encanta un Peón tuyo (☠). La siguiente pieza enemiga que ese peón amenace en diagonal se <strong>convierte a tu bando</strong> — permanece en el tablero con aura verde. El peón no se mueve. ¡Si alcanza al Rey, victoria instantánea!</p></div>
+      </div>
+    </div>
+    <div class="info-section" style="margin-bottom:8px">
+      <h3>💡 Consejos</h3>
+      <ul class="rules-list">
+        <li>Acumula maná capturando piezas valiosas antes de usar hechizos.</li>
+        <li>El <span class="hl">Nigromante</span> convierte piezas enemigas valiosas: úsalo con la Reina o Torres.</li>
+        <li>Usa <span class="hl">Congelar</span> para bloquear la Reina rival en momentos críticos.</li>
+        <li>Pulsa <span class="hl">Escape</span> para cancelar un hechizo activo.</li>
+      </ul>
+    </div>
+    <div style="text-align:center;margin-top:16px"><button class="btn-gold" onclick="closeInfo()">Entendido, ¡a jugar!</button></div>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="confirm-overlay">
+  <div class="confirm-modal">
+    <div class="confirm-title">⚔ ¿Abandonar la batalla?</div>
+    <p>La partida actual se perderá.<br>¿Deseas iniciar una nueva?</p>
+    <div class="confirm-btns">
+      <button class="btn-confirm-yes" onclick="doRestart()">Sí, reiniciar</button>
+      <button class="btn-confirm-no" onclick="closeConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROMOTION MODAL -->
+<div id="promotion-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:150;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div style="background:var(--modal-bg);border:1px solid rgba(201,168,76,0.45);border-radius:8px;padding:32px 36px;text-align:center;box-shadow:0 0 60px rgba(201,168,76,0.15);animation:modalIn 0.3s ease;position:relative;">
+    <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent)"></div>
+    <div style="font-family:'Cinzel Decorative',serif;color:var(--gold);font-size:0.85rem;letter-spacing:0.15em;margin-bottom:6px;">✦ CORONACIÓN</div>
+    <p style="color:var(--text-silver);font-style:italic;font-size:0.9rem;margin-bottom:20px;">Elige la pieza a la que coronar tu Peón</p>
+    <div id="promotion-choices" style="display:flex;gap:14px;justify-content:center;"></div>
+  </div>
+</div>
+
+<!-- VICTORY -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">👑</div>
+    <h2 id="modal-title">¡Victoria!</h2>
+    <p id="modal-text">El reino ha caído</p>
+    <button class="btn-gold" onclick="initGame()">⚔ Nueva Partida</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  BOARD THEMES
+// ══════════════════════════════════════════════════════════
+const BOARD_THEMES = [
+  { id:'classic',  name:'Clásico',    light:'#c8b98a', dark:'#6b4c2a' },
+  { id:'midnight', name:'Medianoche', light:'#6b7b8d', dark:'#2c3e50' },
+  { id:'forest',   name:'Bosque',     light:'#a8c090', dark:'#4a6741' },
+  { id:'crimson',  name:'Carmesí',    light:'#c9a090', dark:'#7a3030' },
+  { id:'marble',   name:'Mármol',     light:'#e8e0d8', dark:'#8a8a9a' },
+  { id:'obsidian', name:'Obsidiana',  light:'#5a5a7a', dark:'#1a1a2e' },
+  { id:'sand',     name:'Arena',      light:'#e8d8a0', dark:'#b8943f' },
+  { id:'amethyst', name:'Amatista',   light:'#c4a8d8', dark:'#6a3d8a' },
+];
+
+// ══════════════════════════════════════════════════════════
+//  COLOUR PALETTES (affect fill/stroke of all piece sets)
+// ══════════════════════════════════════════════════════════
+const PALETTES = {
+  arcane: { name:'Arcano',   w1:'#f5edd8', w2:'#8a6420', b1:'#18120a', b2:'#c9a84c', acc:'#c9a84c', sw1:'rgba(255,255,255,0.65)', sb1:'rgba(201,168,76,0.2)' },
+  noble:  { name:'Noble',    w1:'#fffbe8', w2:'#c9a84c', b1:'#1e1e30', b2:'#a0a8c0', acc:'#c9a84c', sw1:'rgba(255,255,220,0.8)',  sb1:'rgba(160,168,192,0.25)' },
+  blood:  { name:'Sangre',   w1:'#ffe8e8', w2:'#8b0000', b1:'#0d0000', b2:'#cc2222', acc:'#cc2222', sw1:'rgba(255,200,200,0.7)',  sb1:'rgba(180,30,30,0.3)' },
+  ice:    { name:'Hielo',    w1:'#e8f4ff', w2:'#4a8aaa', b1:'#0a1520', b2:'#5ab4d8', acc:'#5ab4d8', sw1:'rgba(200,230,255,0.8)',  sb1:'rgba(80,180,220,0.25)' },
+};
+
+// ══════════════════════════════════════════════════════════
+//  PIECE SETS — 5 completely different shape families
+// ══════════════════════════════════════════════════════════
+
+// Helper: extract inner SVG content from a full svg string
+const innerSVG = s => s.replace(/<svg[^>]*>/,'').replace('</svg>','');
+
+// All shape generators return just the path/shapes (no outer svg, no base)
+const PIECE_SETS = {
+
+  // ── 0. UNICODE: classic chess symbols, large and clean
+  unicode: {
+    name: 'Unicode', desc: 'Símbolos clásicos',
+    shapes: (f,s,sh,acc,sw) => {
+      // Unicode pieces use text, not paths — handled specially
+      return { _unicode: true, _fill: f, _stroke: s };
+    },
+  },
+
+  // ── 1. CLÁSICO: rounded volumetric Staunton-inspired
+  classic: {
+    name: 'Clásico', desc: 'Volumétrico',
+    shapes: (f,s,sh,acc,sw) => ({
+      P: `<ellipse cx="25" cy="17" rx="7.5" ry="7.5" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <ellipse cx="23" cy="15" rx="3" ry="2" fill="${sh}" opacity="0.6"/>
+          <path d="M19.5 24 Q17.5 34 15.5 44 Q25 47.5 34.5 44 Q32.5 34 30.5 24Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <line x1="18" y1="35" x2="32" y2="35" stroke="${s}" stroke-width="1" opacity="0.3"/>`,
+      R: `<rect x="13" y="10" width="5" height="8" rx="1.5" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="22.5" y="10" width="5" height="8" rx="1.5" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="32" y="10" width="5" height="8" rx="1.5" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="14" y="16.5" width="22" height="5" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M17 21.5 Q17 32 15.5 44 Q25 47.5 34.5 44 Q33 32 33 21.5Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="16.5" y="40" width="17" height="3" rx="1.5" fill="${s}" opacity="0.3"/>`,
+      N: `<path d="M16.5 44 Q14.5 35 16 27 Q13 22 12.5 17 Q14 9 21 8.5 Q25.5 7.5 27.5 11 Q31.5 9 32.5 13.5 Q30 15.5 27.5 14.5 Q31 19 29 25.5 Q35 32 35.5 44Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <circle cx="19.5" cy="16" r="2.2" fill="${s}" opacity="0.65"/>
+          <ellipse cx="18.5" cy="15.2" rx="0.9" ry="0.7" fill="${sh}" opacity="0.85"/>
+          <path d="M17 23 Q21 21 25 23" stroke="${s}" stroke-width="1.2" fill="none" opacity="0.4"/>`,
+      B: `<circle cx="25" cy="8.5" r="3.5" fill="${acc}"/>
+          <circle cx="25" cy="8.5" r="1.5" fill="${f}" opacity="0.7"/>
+          <ellipse cx="25" cy="21" rx="6.5" ry="9" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M18.5 27 Q16.5 35 15.5 44 Q25 47.5 34.5 44 Q33.5 35 31.5 27Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <ellipse cx="23" cy="18" rx="2.5" ry="4" fill="${sh}" opacity="0.45"/>`,
+      Q: `<circle cx="25" cy="8" r="3" fill="${acc}"/>
+          <circle cx="12" cy="13" r="2.8" fill="${f}" stroke="${s}" stroke-width="1.6"/>
+          <circle cx="38" cy="13" r="2.8" fill="${f}" stroke="${s}" stroke-width="1.6"/>
+          <circle cx="7"  cy="21" r="2.2" fill="${f}" stroke="${s}" stroke-width="1.4"/>
+          <circle cx="43" cy="21" r="2.2" fill="${f}" stroke="${s}" stroke-width="1.4"/>
+          <path d="M7 21 Q10 31 14 39 Q25 43 36 39 Q40 31 43 21 Q38 14 25 12 Q12 14 7 21Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M14 39 Q25 46 36 39" stroke="${s}" stroke-width="2.5" fill="none"/>
+          <ellipse cx="25" cy="29" rx="8" ry="6" fill="${sh}" opacity="0.2"/>`,
+      K: `<rect x="22.5" y="4" width="5" height="11" rx="2" fill="${acc}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="18.5" y="8" width="13" height="5" rx="2" fill="${acc}" stroke="${s}" stroke-width="0.8"/>
+          <ellipse cx="25" cy="22" rx="9.5" ry="7.5" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M15.5 27 Q13.5 35 13 44 Q25 47.5 37 44 Q36.5 35 34.5 27Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <ellipse cx="25" cy="36" rx="10" ry="3" fill="${s}" opacity="0.18"/>
+          <ellipse cx="23" cy="19" rx="4" ry="3" fill="${sh}" opacity="0.38"/>`,
+    }),
+  },
+
+  // ── 2. MINIMALISTA: flat geometric, pure shapes, no gradients
+  minimal: {
+    name: 'Minimal', desc: 'Geométrico plano',
+    shapes: (f,s,sh,acc,sw) => ({
+      P: `<circle cx="25" cy="18" r="8" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="20" y="26" width="10" height="18" rx="2" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="15" y="40" width="20" height="4" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`,
+      R: `<rect x="14" y="10" width="22" height="34" rx="2" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="12" y="8" width="6" height="10" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="22" y="8" width="6" height="10" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="32" y="8" width="6" height="10" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="12" y="40" width="26" height="4" rx="1" fill="${s}" opacity="0.4"/>`,
+      N: `<polygon points="25,8 38,20 34,44 16,44 13,22" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <circle cx="22" cy="20" r="3" fill="${s}" opacity="0.5"/>
+          <line x1="16" y1="30" x2="34" y2="30" stroke="${s}" stroke-width="1.5" opacity="0.4"/>`,
+      B: `<polygon points="25,7 35,28 25,44 15,28" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <circle cx="25" cy="7" r="4" fill="${acc}"/>
+          <line x1="25" y1="13" x2="25" y2="38" stroke="${s}" stroke-width="1" opacity="0.3"/>`,
+      Q: `<polygon points="25,6 31,16 43,18 34,27 36,39 25,33 14,39 16,27 7,18 19,16" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <rect x="14" y="39" width="22" height="4" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`,
+      K: `<rect x="22" y="4" width="6" height="12" rx="1" fill="${acc}"/>
+          <rect x="18" y="8" width="14" height="6" rx="1" fill="${acc}"/>
+          <rect x="14" y="15" width="22" height="28" rx="3" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <rect x="12" y="40" width="26" height="4" rx="1" fill="${f}" stroke="${s}" stroke-width="${sw}"/>`,
+    }),
+  },
+
+  // ── 3. RÚNICO: angular medieval, engravings, gothic feel
+  runic: {
+    name: 'Rúnico', desc: 'Medieval gótico',
+    shapes: (f,s,sh,acc,sw) => ({
+      P: `<path d="M25 8 L30 18 L28 20 L32 26 L28 26 L27 44 L23 44 L22 26 L18 26 L22 20 L20 18Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <ellipse cx="25" cy="8" rx="4" ry="4" fill="${acc}"/>
+          <line x1="19" y1="35" x2="31" y2="35" stroke="${s}" stroke-width="1.5" opacity="0.5"/>`,
+      R: `<path d="M13 10 L13 6 L18 6 L18 10 L20 10 L20 6 L25 6 L25 10 L27 10 L27 6 L32 6 L32 10 L37 10 L37 44 L13 44Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <line x1="13" y1="20" x2="37" y2="20" stroke="${s}" stroke-width="1.5" opacity="0.4"/>
+          <line x1="13" y1="35" x2="37" y2="35" stroke="${s}" stroke-width="1" opacity="0.3"/>`,
+      N: `<path d="M15 44 L15 22 L13 18 L14 12 L19 8 L23 10 L26 8 L30 9 L32 13 L30 15 L33 22 L35 44Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <circle cx="19" cy="15" r="2.5" fill="${s}" opacity="0.6"/>
+          <path d="M14 28 L36 28" stroke="${s}" stroke-width="1.5" opacity="0.35"/>
+          <path d="M15 37 L35 37" stroke="${s}" stroke-width="1" opacity="0.25"/>`,
+      B: `<path d="M25 6 L28 14 L33 16 L28 18 L30 28 L25 44 L20 28 L22 18 L17 16 L22 14Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <polygon points="25,4 27,8 25,10 23,8" fill="${acc}"/>
+          <line x1="20" y1="24" x2="30" y2="24" stroke="${s}" stroke-width="1.5" opacity="0.4"/>`,
+      Q: `<path d="M8 20 L11 12 L15 16 L18 8 L22 14 L25 6 L28 14 L32 8 L35 16 L39 12 L42 20 L36 30 L36 44 L14 44 L14 30Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <line x1="14" y1="35" x2="36" y2="35" stroke="${s}" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="25" cy="6" r="3" fill="${acc}"/>`,
+      K: `<path d="M22 4 L22 8 L19 8 L19 12 L22 12 L22 16 L15 22 L13 44 L37 44 L35 22 L28 16 L28 12 L31 12 L31 8 L28 8 L28 4Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="miter"/>
+          <rect x="22" y="4" width="6" height="12" fill="${acc}" opacity="0.8"/>
+          <rect x="19" y="8" width="12" height="4" fill="${acc}" opacity="0.8"/>
+          <line x1="13" y1="34" x2="37" y2="34" stroke="${s}" stroke-width="1.5" opacity="0.4"/>`,
+    }),
+  },
+
+  // ── 4. PIXEL: retro 8-bit blocky pieces
+  pixel: {
+    name: 'Pixel', desc: 'Retro 8-bit',
+    shapes: (f,s,sh,acc,sw) => ({
+      P: `<rect x="21" y="8"  width="8" height="4" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="19" y="12" width="12" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="21" y="20" width="8" height="4" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="17" y="24" width="16" height="12" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="15" y="36" width="20" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="23" y="10" width="2" height="2" fill="${acc}"/>`,
+      R: `<rect x="13" y="8"  width="6" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="22" y="8"  width="6" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="31" y="8"  width="6" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="14" width="24" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="15" y="20" width="20" height="16" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="36" width="24" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>`,
+      N: `<rect x="19" y="8"  width="14" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="14" width="20" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="20" width="14" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="17" y="26" width="16" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="17" y="32" width="16" height="12" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="21" y="12" width="4" height="4" fill="${s}" opacity="0.6"/>`,
+      B: `<rect x="23" y="4"  width="4" height="6" fill="${acc}"/>
+          <rect x="21" y="10" width="8" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="19" y="16" width="12" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="17" y="22" width="16" height="6" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="15" y="28" width="20" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="36" width="24" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>`,
+      Q: `<rect x="11" y="8"  width="4" height="4" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="18" y="8"  width="4" height="4" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="25" y="6"  width="4" height="6" fill="${acc}"/>
+          <rect x="32" y="8"  width="4" height="4" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="11" y="14" width="28" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="22" width="24" height="10" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="32" width="24" height="12" fill="${f}" stroke="${s}" stroke-width="0.8"/>`,
+      K: `<rect x="23" y="4"  width="4" height="8" fill="${acc}"/>
+          <rect x="19" y="8"  width="12" height="4" fill="${acc}"/>
+          <rect x="17" y="12" width="16" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="15" y="20" width="20" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="28" width="24" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="13" y="36" width="24" height="8" fill="${f}" stroke="${s}" stroke-width="0.8"/>`,
+    }),
+  },
+
+  // ── 5. FANTASY: ornate flourished fantasy RPG pieces
+  fantasy: {
+    name: 'Fantasía', desc: 'RPG ornamentado',
+    shapes: (f,s,sh,acc,sw) => ({
+      P: `<circle cx="25" cy="14" r="8" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <circle cx="25" cy="14" r="4" fill="${acc}" opacity="0.6"/>
+          <circle cx="25" cy="14" r="2" fill="${sh}" opacity="0.8"/>
+          <path d="M18 22 C14 28 12 36 13 44 L37 44 C38 36 36 28 32 22 C29 26 21 26 18 22Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M16 32 C20 30 30 30 34 32" stroke="${s}" stroke-width="1" fill="none" opacity="0.4"/>
+          <path d="M15 38 C20 36 30 36 35 38" stroke="${s}" stroke-width="1" fill="none" opacity="0.4"/>`,
+      R: `<path d="M13 8 L13 44 L37 44 L37 8 Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M11 6 L16 6 L16 10 L14 12 L36 12 L34 10 L34 6 L39 6 L39 10 L37 14 L13 14 L11 10 Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <path d="M13 28 L37 28" stroke="${s}" stroke-width="1.5" opacity="0.4"/>
+          <circle cx="25" cy="21" r="4" fill="${acc}" opacity="0.5"/>`,
+      N: `<path d="M15 44 C15 36 14 28 15 22 C12 18 11 13 14 9 C17 5 22 7 24 10 C27 7 32 6 34 10 C32 13 30 13 29 12 C32 17 31 24 34 30 C36 35 36 40 35 44Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <circle cx="19" cy="15" r="3" fill="${acc}" opacity="0.7"/>
+          <circle cx="20" cy="14" r="1.5" fill="${sh}" opacity="0.9"/>
+          <path d="M14 28 C20 25 28 26 34 28" stroke="${s}" stroke-width="1" fill="none" opacity="0.4"/>`,
+      B: `<circle cx="25" cy="7" r="5" fill="${acc}" stroke="${s}" stroke-width="1"/>
+          <circle cx="25" cy="7" r="2.5" fill="${f}"/>
+          <path d="M25 12 C20 16 17 22 18 30 C19 38 22 42 25 44 C28 42 31 38 32 30 C33 22 30 16 25 12Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M18 26 C21 24 29 24 32 26" stroke="${s}" stroke-width="1" fill="none" opacity="0.4"/>
+          <path d="M18 34 C21 32 29 32 32 34" stroke="${s}" stroke-width="1" fill="none" opacity="0.35"/>`,
+      Q: `<path d="M7 18 L10 10 L13 16 L17 8 L20 16 L25 5 L30 16 L33 8 L37 16 L40 10 L43 18 L38 30 L36 44 L14 44 L12 30Z" fill="${f}" stroke="${s}" stroke-width="${sw}" stroke-linejoin="round"/>
+          <circle cx="25" cy="5" r="4" fill="${acc}"/>
+          <circle cx="25" cy="5" r="2" fill="${sh}" opacity="0.8"/>
+          <path d="M14 32 C19 30 31 30 36 32" stroke="${s}" stroke-width="1.5" fill="none" opacity="0.4"/>
+          <circle cx="25" cy="24" r="5" fill="${acc}" opacity="0.35"/>`,
+      K: `<rect x="23" y="3" width="4" height="10" rx="1" fill="${acc}" stroke="${s}" stroke-width="0.8"/>
+          <rect x="19" y="7" width="12" height="4" rx="1" fill="${acc}" stroke="${s}" stroke-width="0.8"/>
+          <path d="M15 18 C12 24 12 34 14 44 L36 44 C38 34 38 24 35 18 C32 14 28 14 25 13 C22 14 18 14 15 18Z" fill="${f}" stroke="${s}" stroke-width="${sw}"/>
+          <path d="M15 28 C19 26 31 26 35 28" stroke="${s}" stroke-width="1" fill="none" opacity="0.4"/>
+          <path d="M14 36 C18 34 32 34 36 36" stroke="${s}" stroke-width="1" fill="none" opacity="0.35"/>
+          <circle cx="25" cy="22" r="5" fill="${acc}" opacity="0.4"/>
+          <circle cx="25" cy="22" r="2.5" fill="${sh}" opacity="0.5"/>`,
+    }),
+  },
+};
+
+// ══════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════
+let currentTheme   = 'classic';
+let currentPalette = 'arcane';
+let currentSet     = 'classic';
+
+// ══════════════════════════════════════════════════════════
+//  SVG GENERATOR  (combines set shapes + palette colours)
+// ══════════════════════════════════════════════════════════
+// Unicode glyph map
+const UNICODE_GLYPHS = {
+  wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
+};
+
+function getPieceSVG(code, setId, palId) {
+  const isWhite = code[0] === 'w';
+  const type    = code[1];
+  const pal     = PALETTES[palId || currentPalette];
+  const sid     = setId || currentSet;
+  const set     = PIECE_SETS[sid];
+
+  const fill   = isWhite ? pal.w1 : pal.b1;
+  const stroke = isWhite ? pal.w2 : pal.b2;
+  const shine  = isWhite ? pal.sw1 : pal.sb1;
+  const sdw    = isWhite ? 'rgba(80,50,5,0.42)' : 'rgba(0,0,0,0.85)';
+  const acc    = pal.acc;
+  const sw     = 2;
+
+  // ── Unicode set: render glyph as SVG text with colour
+  if(sid === 'unicode'){
+    const glyph = UNICODE_GLYPHS[code] || '?';
+    const textCol = isWhite ? pal.w1 : pal.b1;
+    const outlineCol = isWhite ? pal.w2 : pal.b2;
+    return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="25" cy="47" rx="12.5" ry="3" fill="${sdw}"/>
+      <text x="25" y="40" text-anchor="middle" dominant-baseline="auto"
+        font-size="36" font-family="serif"
+        stroke="${outlineCol}" stroke-width="2" paint-order="stroke"
+        fill="${textCol}">${glyph}</text>
+    </svg>`;
+  }
+
+  const base = `
+    <ellipse cx="25" cy="47" rx="12.5" ry="3" fill="${sdw}"/>
+    <ellipse cx="25" cy="44.5" rx="10" ry="3.2" fill="${stroke}" opacity="0.38"/>
+  `;
+
+  const shapeMap = set.shapes(fill, stroke, shine, acc, sw);
+  const body = shapeMap[type] || '';
+
+  return `<svg viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">${base}${body}</svg>`;
+}
+
+// ══════════════════════════════════════════════════════════
+//  BUILD CUSTOMIZATION PANEL
+// ══════════════════════════════════════════════════════════
+function buildCustomPanel() {
+  // ── Board themes
+  const tg = document.getElementById('theme-grid');
+  tg.innerHTML = '';
+  BOARD_THEMES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'theme-btn' + (t.id === currentTheme ? ' active' : '');
+    btn.onclick = () => applyTheme(t.id);
+    let cells = '';
+    for (let i = 0; i < 8; i++) {
+      const isLight = (Math.floor(i/4) + i) % 2 === 0;
+      cells += `<span style="background:${isLight ? t.light : t.dark}"></span>`;
+    }
+    btn.innerHTML = `<div class="theme-preview">${cells}</div><div class="theme-label">${t.name}</div>`;
+    tg.appendChild(btn);
+  });
+
+  // ── Piece sets (show 3 piece types as preview)
+  const sg = document.getElementById('set-grid');
+  sg.innerHTML = '';
+  const previewTypes = ['wK','wQ','wP','bK','bQ','bP'];
+  Object.entries(PIECE_SETS).forEach(([id, set]) => {
+    const btn = document.createElement('button');
+    btn.className = 'set-btn' + (id === currentSet ? ' active' : '');
+    btn.onclick = () => applySet(id);
+
+    // Build mini SVG row: white King, black King, white Pawn
+    const prevHtml = ['wK','bK','wP'].map(code => {
+      const svg = getPieceSVG(code, id, currentPalette);
+      return svg.replace('<svg viewBox="0 0 50 50"', '<svg viewBox="0 0 50 50" width="28" height="28"');
+    }).join('');
+
+    btn.innerHTML = `
+      <div class="set-preview">${prevHtml}</div>
+      <span class="set-name">${set.name}</span>
+      <span class="set-desc">${set.desc}</span>`;
+    sg.appendChild(btn);
+  });
+
+  // ── Colour palettes
+  const cg = document.getElementById('color-grid');
+  cg.innerHTML = '';
+  Object.entries(PALETTES).forEach(([id, pal]) => {
+    const btn = document.createElement('button');
+    btn.className = 'color-btn' + (id === currentPalette ? ' active' : '');
+    btn.onclick = () => applyPalette(id);
+    btn.innerHTML = `
+      <div class="color-swatch">
+        <span class="swatch" style="background:${pal.w1};border-color:${pal.w2}"></span>
+        <span class="swatch" style="background:${pal.acc}"></span>
+        <span class="swatch" style="background:${pal.b1};border-color:${pal.b2}"></span>
+      </div>
+      <div class="color-name">${pal.name}</div>`;
+    cg.appendChild(btn);
+  });
+}
+
+function applyTheme(id) {
+  const t = BOARD_THEMES.find(x => x.id === id); if (!t) return;
+  currentTheme = id;
+  document.documentElement.style.setProperty('--board-light', t.light);
+  document.documentElement.style.setProperty('--board-dark', t.dark);
+  document.querySelectorAll('.theme-btn').forEach((b,i) => b.classList.toggle('active', BOARD_THEMES[i].id === id));
+  renderBoard();
+}
+
+function applySet(id) {
+  currentSet = id;
+  document.querySelectorAll('.set-btn').forEach((b,i) => b.classList.toggle('active', Object.keys(PIECE_SETS)[i] === id));
+  renderBoard(); updateCapturedDisplay(); buildCustomPanel();
+}
+
+function applyPalette(id) {
+  currentPalette = id;
+  document.querySelectorAll('.color-btn').forEach((b,i) => b.classList.toggle('active', Object.keys(PALETTES)[i] === id));
+  renderBoard(); updateCapturedDisplay(); buildCustomPanel();
+}
+
+function openCustom() { buildCustomPanel(); document.getElementById('custom-panel').classList.add('open'); document.getElementById('panel-backdrop').classList.add('show'); }
+function closeCustom() { document.getElementById('custom-panel').classList.remove('open'); document.getElementById('panel-backdrop').classList.remove('show'); }
+function openInfo()   { document.getElementById('info-overlay').classList.add('show'); }
+function closeInfo()  { document.getElementById('info-overlay').classList.remove('show'); }
+
+// ══════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════
+const MANA_GAIN   = { K:0, Q:3, R:2, B:1, N:1, P:1 };
+const SPELL_COSTS = { teleport:3, freeze:4, revive:5, necro:4 };
+
+let board = [], currentPlayer='white', selectedCell=null, validMoves=[];
+let necroConverted=new Set(); // cells with purple-glowing converted pieces
+let necroPawns=new Set();     // cells with enchanted necromancer pawns
+let capturedPieces={white:[],black:[]}, mana={white:3,black:3}, frozenCells={};
+let lastMove=null, moveCount=1, activeSpell=null, spellStep=0, spellData={}, gameOver=false;
+// Castling rights: track if king/rooks have moved
+let castlingRights = { wK:true, wRa:true, wRh:true, bK:true, bRa:true, bRh:true };
+// Pending promotion
+let pendingPromotion = null; // {r, c, own}
+
+function initBoard() {
+  board = Array(8).fill(null).map(()=>Array(8).fill(null));
+  const back=['R','N','B','Q','K','B','N','R'];
+  for(let c=0;c<8;c++){board[0][c]='b'+back[c];board[1][c]='bP';board[6][c]='wP';board[7][c]='w'+back[c];}
+}
+
+function confirmRestart(){document.getElementById('confirm-overlay').classList.add('show')}
+function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('show')}
+function doRestart(){closeConfirm();initGame()}
+
+function initGame(){
+  initBoard();currentPlayer='white';selectedCell=null;validMoves=[];
+  capturedPieces={white:[],black:[]};mana={white:3,black:3};frozenCells={};necroConverted=new Set();necroPawns=new Set();
+  castlingRights={wK:true,wRa:true,wRh:true,bK:true,bRa:true,bRh:true};
+  lastMove=null;moveCount=1;activeSpell=null;spellStep=0;spellData={};gameOver=false;
+  document.getElementById('overlay').classList.remove('show');
+  ['white','black'].forEach(p=>{document.getElementById('captured-'+p).innerHTML='';document.getElementById('log-'+p).innerHTML='';});
+  updateMana();renderBoard();updateUI();
+}
+
+// ══════════════════════════════════════════════════════════
+//  RENDER
+// ══════════════════════════════════════════════════════════
+function renderBoard(){
+  const cb=document.getElementById('chessboard');cb.innerHTML='';
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const cell=document.createElement('div');
+    cell.className='cell '+((r+c)%2===0?'light':'dark');
+    cell.dataset.r=r;cell.dataset.c=c;
+    const key=r+','+c;
+    if(frozenCells[key]) cell.classList.add('frozen');
+    if(necroConverted.has(key)) cell.classList.add('necro-converted');
+    if(necroPawns.has(key)) cell.classList.add('necro-pawn');
+    if(lastMove&&((r===lastMove.fr&&c===lastMove.fc)||(r===lastMove.tr&&c===lastMove.tc))) cell.classList.add('last-move');
+    if(selectedCell&&selectedCell[0]===r&&selectedCell[1]===c) cell.classList.add('selected');
+    const isValid=validMoves.find(m=>m[0]===r&&m[1]===c);
+    if(isValid) cell.classList.add(board[r][c]&&board[r][c][0]!==currentPlayer[0]?'valid-capture':'valid-move');
+    if(board[r][c]){const d=document.createElement('div');d.className='piece';d.innerHTML=getPieceSVG(board[r][c]);cell.appendChild(d);}
+    cell.addEventListener('click',()=>onCellClick(r,c));
+    cb.appendChild(cell);
+  }
+
+  // ── Highlight king in check
+  const cpOwn = currentPlayer[0];
+  const cpEnemy = cpOwn==='w'?'b':'w';
+  for(let rr=0;rr<8;rr++) for(let cc=0;cc<8;cc++){
+    if(board[rr][cc]===cpOwn+'K'){
+      if(isAttackedBy(rr,cc,cpEnemy)){
+        const idx2=rr*8+cc;
+        cb.children[idx2] && cb.children[idx2].classList.add('in-check');
+        // Also show in status bar
+        document.getElementById('status-msg').textContent =
+          `⚠ ¡JAQUE! ${currentPlayer==='white'?'Rey blanco':'Rey negro'} en peligro`;
+      }
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  MOVEMENT
+// ══════════════════════════════════════════════════════════
+// Check if a square (nr,nc) is attacked by the enemy of `byColor`
+function isAttackedBy(nr,nc,byColor){
+  const enemy=byColor;
+  // Pawns
+  const pawnDir=enemy==='w'?1:-1; // white pawns attack upward (row-1), so from below (row+1)
+  for(const dc of[-1,1]){const pr=nr+pawnDir,pc=nc+dc;if(pr>=0&&pr<8&&pc>=0&&pc<8&&board[pr][pc]===enemy+'P')return true;}
+  // Knights
+  for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const pr=nr+dr,pc=nc+dc;if(pr>=0&&pr<8&&pc>=0&&pc<8&&board[pr][pc]===enemy+'N')return true;}
+  // Bishops / Queens (diagonals)
+  for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]]){let pr=nr+dr,pc=nc+dc;while(pr>=0&&pr<8&&pc>=0&&pc<8){const p=board[pr][pc];if(p){if(p===enemy+'B'||p===enemy+'Q')return true;break;}pr+=dr;pc+=dc;}}
+  // Rooks / Queens (straights)
+  for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]]){let pr=nr+dr,pc=nc+dc;while(pr>=0&&pr<8&&pc>=0&&pc<8){const p=board[pr][pc];if(p){if(p===enemy+'R'||p===enemy+'Q')return true;break;}pr+=dr;pc+=dc;}}
+  // King
+  for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){const pr=nr+dr,pc=nc+dc;if(pr>=0&&pr<8&&pc>=0&&pc<8&&board[pr][pc]===enemy+'K')return true;}
+  return false;
+}
+
+function getValidMoves(r,c){
+  const piece=board[r][c];if(!piece)return[];
+  const color=piece[0],type=piece[1],moves=[],enemy=color==='w'?'b':'w';
+  const add=(nr,nc)=>{if(nr<0||nr>7||nc<0||nc>7)return false;if(board[nr][nc]){if(board[nr][nc][0]===enemy)moves.push([nr,nc]);return false;}moves.push([nr,nc]);return true;};
+  const slide=(dr,dc)=>{let nr=r+dr,nc=c+dc;while(nr>=0&&nr<8&&nc>=0&&nc<8){if(!add(nr,nc))break;nr+=dr;nc+=dc;}};
+  if(type==='P'){const dir=color==='w'?-1:1;const startRow=color==='w'?6:1;if(!board[r+dir]?.[c]){moves.push([r+dir,c]);if(r===startRow&&!board[r+2*dir]?.[c])moves.push([r+2*dir,c]);}for(const dc of[-1,1]){const nr=r+dir,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&board[nr][nc]?.[0]===enemy)moves.push([nr,nc]);}}
+  else if(type==='N'){for(const[dr,dc]of[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])add(r+dr,c+dc);}
+  else if(type==='B'){for(const[dr,dc]of[[-1,-1],[-1,1],[1,-1],[1,1]])slide(dr,dc);}
+  else if(type==='R'){for(const[dr,dc]of[[-1,0],[1,0],[0,-1],[0,1]])slide(dr,dc);}
+  else if(type==='Q'){for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])slide(dr,dc);}
+  else if(type==='K'){
+    for(const[dr,dc]of[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])add(r+dr,c+dc);
+    // ── CASTLING
+    const kingInCheck = isAttackedBy(r,c,enemy);
+    if(!kingInCheck){
+      const kKey=color==='w'?'wK':'bK';
+      const row=color==='w'?7:0;
+      if(r===row && c===4){
+        // Kingside (h-rook): squares e1-f1-g1 must be empty and not attacked
+        const rhKey=color==='w'?'wRh':'bRh';
+        if(castlingRights[kKey]&&castlingRights[rhKey]&&
+           !board[row][5]&&!board[row][6]&&
+           board[row][7]===(color+'R')&&
+           !isAttackedBy(row,5,enemy)&&!isAttackedBy(row,6,enemy)){
+          moves.push([row,6,'castle-k']); // special tag
+        }
+        // Queenside (a-rook): squares d1-c1-b1 must be empty; b1 just needs to be empty
+        const raKey=color==='w'?'wRa':'bRa';
+        if(castlingRights[kKey]&&castlingRights[raKey]&&
+           !board[row][1]&&!board[row][2]&&!board[row][3]&&
+           board[row][0]===(color+'R')&&
+           !isAttackedBy(row,3,enemy)&&!isAttackedBy(row,2,enemy)){
+          moves.push([row,2,'castle-q']); // special tag
+        }
+      }
+    }
+  }
+  return moves;
+}
+
+function onCellClick(r,c){
+  if(gameOver)return;
+  if(activeSpell){handleSpellClick(r,c);return;}
+  const piece=board[r][c],key=r+','+c;
+  if(selectedCell){const[sr,sc]=selectedCell;const mv=validMoves.find(m=>m[0]===r&&m[1]===c);if(mv){executeMove(sr,sc,r,c,mv[2]);return;}}
+  if(piece&&piece[0]===currentPlayer[0]){
+    if(frozenCells[key]){addLog(`La pieza en ${cn(r,c)} está congelada.`,currentPlayer,'special');selectedCell=null;validMoves=[];renderBoard();return;}
+    selectedCell=[r,c];validMoves=getValidMoves(r,c);renderBoard();
+  }else{selectedCell=null;validMoves=[];renderBoard();}
+}
+
+function executeMove(fr,fc,tr,tc,castleType){
+  const piece=board[fr][fc],target=board[tr][tc],type=piece[1];
+  const own=piece[0], enemy=own==='w'?'b':'w';
+  const isNecroPawn = necroPawns.has(fr+','+fc);
+
+  if(target){
+    if(isNecroPawn && target[1]!=='K'){
+      // NECROMANCER PAWN: pawn STAYS in place, enemy piece converts in their square
+      const converted = target;
+      board[tr][tc] = own + converted[1];  // enemy square: converted piece, now own color
+      // board[fr][fc] stays as the pawn (set below)
+      necroConverted.add(tr+','+tc);
+      necroPawns.delete(fr+','+fc); // enchantment consumed
+      mana[currentPlayer]=Math.min(10,mana[currentPlayer]+(MANA_GAIN[converted[1]]||1));
+      addLog(`💀 ¡Peón Nigromante convierte ${pn(converted)} en ${cn(tr,tc)} y permanece en ${cn(fr,fc)}!`,currentPlayer,'special');
+      // pawn stays: board[fr][fc] already has the pawn, no change needed there
+      lastMove={fr,fc,tr,tc};
+      flashCell(tr,tc);
+      const nf={};for(const k in frozenCells){frozenCells[k]--;if(frozenCells[k]>0)nf[k]=frozenCells[k];}frozenCells=nf;
+      selectedCell=null;validMoves=[];mana[currentPlayer]=Math.min(10,mana[currentPlayer]+0.5);
+      switchTurn();
+      return;
+    } else if(isNecroPawn && target[1]==='K'){
+      // Necro pawn converts the King = instant win (pawn stays too)
+      gameOver=true;
+      board[tr][tc] = own + 'K'; // converted king (visual)
+      necroConverted.add(tr+','+tc);
+      necroPawns.delete(fr+','+fc);
+      addLog(`💀 ¡El Peón Nigromante convierte al REY en ${cn(tr,tc)}! ¡Victoria arcana!`,currentPlayer,'special');
+      lastMove={fr,fc,tr,tc};
+      flashCell(tr,tc);
+      setTimeout(()=>showVictory(currentPlayer),500);
+      renderBoard();updateMana();updateCapturedDisplay();
+      return;
+    } else {
+      // Normal capture
+      capturedPieces[currentPlayer].push(target);
+      mana[currentPlayer]=Math.min(10,mana[currentPlayer]+(MANA_GAIN[target[1]]||1));
+      addLog(`¡${pn(piece)} captura ${pn(target)} en ${cn(tr,tc)}!`,currentPlayer,'capture');
+      if(target[1]==='K'){gameOver=true;setTimeout(()=>showVictory(currentPlayer),400);}
+      // Clear necro glow when piece is captured
+      necroConverted.delete(tr+','+tc);
+      necroPawns.delete(tr+','+tc);
+      // Revoke castling rights if enemy rook captured
+      if(target[1]==='R'){
+        if(tr===(enemy==='w'?7:0)&&tc===0){const rk=enemy==='w'?'wRa':'bRa';castlingRights[rk]=false;}
+        if(tr===(enemy==='w'?7:0)&&tc===7){const rk=enemy==='w'?'wRh':'bRh';castlingRights[rk]=false;}
+      }
+    }
+  } else {
+    addLog(`${pn(piece)} → ${cn(tr,tc)}`,currentPlayer);
+  }
+
+  // Normal move: piece goes from fr,fc to tr,tc
+  board[tr][tc]=piece;
+  board[fr][fc]=null;
+  lastMove={fr,fc,tr,tc};
+
+  // ── CASTLING execution
+  if(castleType==='castle-k'){
+    const row=fr; board[row][5]=board[row][7]; board[row][7]=null;
+    const rhKey=own==='w'?'wRh':'bRh'; castlingRights[rhKey]=false;
+    addLog(`♜ Enroque corto (rey-lado)`,currentPlayer,'special');
+  } else if(castleType==='castle-q'){
+    const row=fr; board[row][3]=board[row][0]; board[row][0]=null;
+    const raKey=own==='w'?'wRa':'bRa'; castlingRights[raKey]=false;
+    addLog(`♜ Enroque largo (dama-lado)`,currentPlayer,'special');
+  }
+
+  // ── Update castling rights when king or rook moves
+  if(type==='K'){ const kk=own==='w'?'wK':'bK'; castlingRights[kk]=false; }
+  if(type==='R'){
+    if(fr===(own==='w'?7:0)&&fc===0){ const rk=own==='w'?'wRa':'bRa'; castlingRights[rk]=false; }
+    if(fr===(own==='w'?7:0)&&fc===7){ const rk=own==='w'?'wRh':'bRh'; castlingRights[rk]=false; }
+  }
+
+  // Migrate necro pawn mark when it moves normally (no capture)
+  if(necroPawns.has(fr+','+fc)){
+    necroPawns.delete(fr+','+fc);
+    necroPawns.add(tr+','+tc); // stays enchanted after a non-capture move
+  }
+  if(necroConverted.has(fr+','+fc)){necroConverted.delete(fr+','+fc);necroConverted.add(tr+','+tc);}
+
+  // Pawn promotion — show choice modal
+  if(type==='P'&&((own==='w'&&tr===0)||(own==='b'&&tr===7))){
+    necroPawns.delete(tr+','+tc);
+    pendingPromotion={r:tr,c:tc,own};
+    // Pause the turn switch, wait for player choice
+    renderBoard(); updateMana(); updateCapturedDisplay();
+    showPromotionModal(own);
+    return; // DO NOT switchTurn yet
+  }
+
+  const nf={};for(const k in frozenCells){frozenCells[k]--;if(frozenCells[k]>0)nf[k]=frozenCells[k];}frozenCells=nf;
+  selectedCell=null;validMoves=[];mana[currentPlayer]=Math.min(10,mana[currentPlayer]+0.5);
+  if(!gameOver)switchTurn();else{renderBoard();updateMana();updateCapturedDisplay();}
+}
+
+function switchTurn(){currentPlayer=currentPlayer==='white'?'black':'white';moveCount++;updateMana();renderBoard();updateUI();updateCapturedDisplay();}
+
+// ══════════════════════════════════════════════════════════
+//  SPELLS
+// ══════════════════════════════════════════════════════════
+function activateSpell(spell,player){
+  if(player!==currentPlayer){addLog('No es tu turno.',player,'special');return;}
+  const cost=SPELL_COSTS[spell];
+  if(mana[player]<cost){addLog(`Maná insuficiente (necesitas ${cost}).`,player,'special');return;}
+  activeSpell=spell;spellStep=0;spellData={player};
+  document.querySelectorAll('.spell-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll(`[data-spell="${spell}"][data-player="${player}"]`).forEach(b=>b.classList.add('active'));
+  const inst={teleport:'✨ Selecciona tu pieza a teletransportar',freeze:'❄️ Selecciona pieza enemiga a congelar',revive:'💀 Selecciona una casilla vacía para invocar un peón (no fila 1 ni 8)',necro:'💀 Selecciona el Peón que deseas encantar como Nigromante'};
+  document.getElementById('status-msg').textContent=inst[spell];
+}
+function cancelSpell(){activeSpell=null;spellStep=0;spellData={};document.querySelectorAll('.spell-btn').forEach(b=>b.classList.remove('active'));updateUI();}
+function handleSpellClick(r,c){
+  const player=spellData.player,cost=SPELL_COSTS[activeSpell],enemy=player==='white'?'b':'w',own=player[0];
+  if(activeSpell==='teleport'){
+    if(spellStep===0){if(board[r][c]?.[0]===own){spellData.fr=r;spellData.fc=c;spellStep=1;document.getElementById('status-msg').textContent='✨ Ahora selecciona el destino (casilla vacía)';}}
+    else if(spellStep===1&&!board[r][c]){board[r][c]=board[spellData.fr][spellData.fc];board[spellData.fr][spellData.fc]=null;mana[player]-=cost;addLog(`✨ Teletransporte: ${cn(spellData.fr,spellData.fc)} → ${cn(r,c)}`,player,'special');flashCell(r,c);cancelSpell();switchTurn();}
+  }else if(activeSpell==='freeze'){
+    if(board[r][c]?.[0]===enemy){frozenCells[r+','+c]=2;mana[player]-=cost;addLog(`❄️ ${pn(board[r][c])} congelada en ${cn(r,c)}. ¡Ahora mueve una pieza!`,player,'special');flashCell(r,c);cancelSpell();document.getElementById('status-msg').textContent='❄️ Pieza congelada — ahora realiza tu movimiento';}
+  }else if(activeSpell==='revive'){
+    const ownPawn = own + 'P';
+    // Count own pawns currently on the board
+    let pawnCount = 0;
+    for(let rr=0;rr<8;rr++) for(let cc=0;cc<8;cc++) if(board[rr][cc]===ownPawn) pawnCount++;
+
+    if(board[r][c]) {
+      // clicked on an occupied cell — ignore silently
+    } else if(r === 0 || r === 7) {
+      addLog(`No puedes colocar un peón en la fila ${r===7?1:8}.`, player, 'special');
+    } else if(pawnCount >= 8) {
+      addLog('Ya tienes 8 peones en el tablero. No puedes revivir más.', player, 'special');
+    } else {
+      board[r][c] = ownPawn;
+      mana[player] -= cost;
+      addLog(`💀 Peón ${player==='white'?'blanco':'negro'} invocado en ${cn(r,c)}!`, player, 'special');
+      flashCell(r,c); cancelSpell(); switchTurn();
+    }
+  }else if(activeSpell==='necro'){
+    // Only step: pick one of your pawns to enchant
+    if(board[r][c]?.[0]===own && board[r][c]?.[1]==='P'){
+      // Check it's not already enchanted
+      if(necroPawns.has(r+','+c)){
+        addLog('Este Peón ya está encantado.',player,'special'); return;
+      }
+      necroPawns.add(r+','+c);
+      mana[player]-=cost;
+      addLog(`💀 ¡Peón en ${cn(r,c)} encantado como Nigromante! Su próxima captura convertirá la pieza.`,player,'special');
+      flashCell(r,c);
+      cancelSpell();
+      // No turn change: player still needs to move
+      document.getElementById('status-msg').textContent='💀 Peón encantado — ahora muévelo para capturar y convertir';
+      renderBoard();
+    } else if(board[r][c]?.[0]===own){
+      addLog('El hechizo Nigromante solo puede encantarse en un Peón.',player,'special');
+    }
+  }
+}
+function flashCell(r,c){renderBoard();const cells=document.querySelectorAll('.cell'),idx=r*8+c;if(cells[idx]){cells[idx].classList.add('chaos-effect');setTimeout(()=>cells[idx].classList.remove('chaos-effect'),600);}}
+
+// ══════════════════════════════════════════════════════════
+//  UI HELPERS
+// ══════════════════════════════════════════════════════════
+function updateUI(){
+  const w=currentPlayer==='white';
+  document.getElementById('turn-white').querySelector('.turn-text').textContent=w?'Blancas · TU TURNO':'Blancas · Esperando';
+  document.getElementById('turn-black').querySelector('.turn-text').textContent=!w?'Negras · TU TURNO':'Negras · Esperando';
+  document.getElementById('turn-white').style.borderColor=w?'rgba(201,168,76,0.5)':'rgba(201,168,76,0.1)';
+  document.getElementById('turn-black').style.borderColor=!w?'rgba(201,168,76,0.5)':'rgba(201,168,76,0.1)';
+  document.getElementById('move-count').textContent=`Turno ${moveCount}`;
+  document.getElementById('status-msg').textContent=currentPlayer==='white'?'Selecciona una pieza blanca':'Selecciona una pieza negra';
+  for(const player of['white','black']){
+    const own = player[0];
+    const ownPawn = own+'P';
+    let pawnCount=0;
+    for(let rr=0;rr<8;rr++) for(let cc=0;cc<8;cc++) if(board[rr][cc]===ownPawn) pawnCount++;
+    document.querySelectorAll(`[data-player="${player}"]`).forEach(btn=>{
+      const spell=btn.dataset.spell;
+      if(!spell) return;
+      let disabled = (player!==currentPlayer)||(mana[player]<SPELL_COSTS[spell]);
+      if(spell==='revive' && pawnCount>=8) disabled=true;
+      btn.disabled=disabled;
+    });
+  }
+}
+function updateMana(){document.getElementById('mana-white').style.width=Math.min(100,(mana.white/10)*100)+'%';document.getElementById('mana-black').style.width=Math.min(100,(mana.black/10)*100)+'%';}
+function updateCapturedDisplay(){
+  ['white','black'].forEach(p=>{document.getElementById('captured-'+p).innerHTML=capturedPieces[p].map(pc=>`<span style="width:26px;height:26px;display:inline-flex;align-items:center">${getPieceSVG(pc).replace('<svg viewBox="0 0 50 50"','<svg viewBox="0 0 50 50" width="24" height="24"')}</span>`).join('');});
+}
+function addLog(text,player,type=''){const log=document.getElementById('log-'+player);const e=document.createElement('div');e.className='log-entry'+(type?' '+type:'');e.textContent=text;log.insertBefore(e,log.firstChild);if(log.children.length>30)log.removeChild(log.lastChild);}
+// ── PROMOTION MODAL
+function showPromotionModal(own){
+  const overlay = document.getElementById('promotion-overlay');
+  overlay.style.display = 'flex';
+  const choices = document.getElementById('promotion-choices');
+  choices.innerHTML = '';
+  const pieces = ['Q','R','B','N'];
+  const names  = {Q:'Reina', R:'Torre', B:'Alfil', N:'Caballo'};
+  pieces.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'promo-btn';
+    btn.innerHTML = `${getPieceSVG(own+type)}<span>${names[type]}</span>`;
+    btn.onclick = () => applyPromotion(own+type);
+    choices.appendChild(btn);
+  });
+}
+
+function applyPromotion(pieceCode){
+  document.getElementById('promotion-overlay').style.display='none';
+  if(!pendingPromotion) return;
+  const {r,c,own} = pendingPromotion;
+  board[r][c] = pieceCode;
+  pendingPromotion = null;
+  addLog(`✨ ¡Peón coronado como ${pn(pieceCode).slice(2)}!`, currentPlayer, 'special');
+  // Now complete the turn
+  const nf={};for(const k in frozenCells){frozenCells[k]--;if(frozenCells[k]>0)nf[k]=frozenCells[k];}frozenCells=nf;
+  selectedCell=null;validMoves=[];mana[currentPlayer]=Math.min(10,mana[currentPlayer]+0.5);
+  if(!gameOver) switchTurn(); else {renderBoard();updateMana();updateCapturedDisplay();}
+}
+
+function showVictory(winner){document.getElementById('modal-icon').textContent=winner==='white'?'☀️':'🌑';document.getElementById('modal-title').textContent='¡'+(winner==='white'?'Luz':'Sombra')+' Triunfa!';document.getElementById('modal-text').textContent=`El Reino de ${winner==='white'?'la Luz':'las Sombras'} ha derrocado al rey en el turno ${moveCount}.`;document.getElementById('overlay').classList.add('show');}
+function cn(r,c){return 'abcdefgh'[c]+(8-r);}
+function pn(code){if(!code)return'?';const names={K:'Rey',Q:'Reina',R:'Torre',B:'Alfil',N:'Caballo',P:'Peón'};return(code[0]==='w'?'⬜':'⬛')+names[code[1]];}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(activeSpell)cancelSpell();if(document.getElementById('info-overlay').classList.contains('show'))closeInfo();if(document.getElementById('custom-panel').classList.contains('open'))closeCustom();}});
+
+// ══════════════════════════════════════════════════════════
+//  LIGHT / DARK MODE
+// ══════════════════════════════════════════════════════════
+let isLightMode = false;
+function toggleLightDark(){
+  isLightMode = !isLightMode;
+  document.body.classList.toggle('light-mode', isLightMode);
+  document.getElementById('theme-icon').textContent = isLightMode ? '🌙' : '☀';
+}
+
+// ══════════════════════════════════════════════════════════
+//  EASTER EGG: CAOS click → board mirror + colour invert
+// ══════════════════════════════════════════════════════════
+let boardMirrored = false;
+let caosClickCount = 0;
+let caosClickTimer = null;
+
+function easterCaos(){
+  caosClickCount++;
+  clearTimeout(caosClickTimer);
+  caosClickTimer = setTimeout(()=>{ caosClickCount=0; }, 800);
+
+  if(caosClickCount < 1) return; // single click triggers it
+  caosClickCount = 0;
+
+  boardMirrored = !boardMirrored;
+  const cb = document.getElementById('chessboard');
+  cb.classList.toggle('mirrored', boardMirrored);
+
+  // Show/hide label
+  let lbl = document.querySelector('.board-mirrored-label');
+  if(boardMirrored){
+    if(!lbl){ lbl=document.createElement('div'); lbl.className='board-mirrored-label'; lbl.textContent='✦ MODO ESPEJO ACTIVO ✦'; document.querySelector('.board-container').style.position='relative'; document.querySelector('.board-container').appendChild(lbl); }
+  } else {
+    if(lbl) lbl.remove();
+  }
+
+  showEasterToast(boardMirrored ? '☠ El tablero se ha girado al Caos ☠' : '✦ Orden restaurado ✦');
+
+  // Invert board colors temporarily
+  if(boardMirrored){
+    const tmp = getComputedStyle(document.documentElement).getPropertyValue('--board-light').trim();
+    const tmp2 = getComputedStyle(document.documentElement).getPropertyValue('--board-dark').trim();
+    document.documentElement.style.setProperty('--board-light', tmp2);
+    document.documentElement.style.setProperty('--board-dark', tmp);
+  } else {
+    // Restore to current theme
+    const t = BOARD_THEMES.find(x=>x.id===currentTheme);
+    if(t){ document.documentElement.style.setProperty('--board-light',t.light); document.documentElement.style.setProperty('--board-dark',t.dark); }
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  EASTER EGG: type "jcaselas" → shuffle pieces
+// ══════════════════════════════════════════════════════════
+let secretBuffer = '';
+const SECRET_CODE = 'jcaselas';
+
+document.addEventListener('keydown', e => {
+  if(e.key.length !== 1) return;
+  secretBuffer = (secretBuffer + e.key.toLowerCase()).slice(-SECRET_CODE.length);
+  if(secretBuffer === SECRET_CODE){
+    secretBuffer = '';
+    triggerJcaselasShuffle();
+  }
+});
+
+function triggerJcaselasShuffle(){
+  showEasterToast('✦ Jcaselas desata el Caos... ✦');
+
+  // Collect all pieces currently on board
+  const pieces = [];
+  const positions = [];
+  for(let r=0;r<8;r++) for(let cc=0;cc<8;cc++){
+    if(board[r][cc]){ pieces.push(board[r][cc]); positions.push([r,cc]); }
+  }
+
+  // Animate cells
+  const cells = document.querySelectorAll('.cell');
+  positions.forEach(([r,cc])=>{
+    const idx=r*8+cc;
+    cells[idx].classList.add('shuffling');
+    setTimeout(()=>cells[idx].classList.remove('shuffling'), 700);
+  });
+
+  // Shuffle pieces into random positions after brief delay
+  setTimeout(()=>{
+    // Fisher-Yates shuffle
+    for(let i=pieces.length-1;i>0;i--){
+      const j=Math.floor(Math.random()*(i+1));
+      [pieces[i],pieces[j]]=[pieces[j],pieces[i]];
+    }
+    // Clear board, reassign
+    for(let r=0;r<8;r++) for(let cc=0;cc<8;cc++) board[r][cc]=null;
+    positions.forEach(([r,cc],i)=>{ board[r][cc]=pieces[i]; });
+    // Clear special states that are now stale
+    necroPawns.clear(); necroConverted.clear(); frozenCells={};
+    renderBoard();
+    addLog('✦ Jcaselas barajó el tablero...', currentPlayer, 'special');
+    addLog('✦ Jcaselas barajó el tablero...', currentPlayer==='white'?'black':'white', 'special');
+  }, 350);
+}
+
+function showEasterToast(msg){
+  const t = document.getElementById('easter-toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+initGame();
+</script>
+</body>
+</html>
