@@ -1,0 +1,30 @@
+{
+  "name": "CAOS REAL — Ajedrez de los Reinos Arcanos",
+  "short_name": "Caos Real",
+  "description": "Ajedrez con hechizos para dos jugadores, en el mismo dispositivo u online.",
+  "lang": "es",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0a14",
+  "theme_color": "#0d0a14",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

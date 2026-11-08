@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CAOS REAL — Ajedrez Alternativo</title>
+<meta name="theme-color" content="#0d0a14">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caos Real">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
 
@@ -201,7 +207,10 @@
   .cell:hover .piece svg{transform:scale(1.1) translateY(-1px)}
   .coords-col { position:absolute; left:8px; top:28px; display:flex; flex-direction:column; height:calc(8 * 66px); justify-content:space-around; }
   .coords-row { position:absolute; bottom:8px; left:28px; display:flex; width:calc(8 * 66px); justify-content:space-around; }
-  .coord{font-size:0.58rem;color:var(--gold);opacity:0.45;font-family:'Cinzel Decorative',serif}
+  .coord{font-size:0.78rem;font-weight:700;color:var(--gold);opacity:0.95;font-family:'Cormorant Garamond',Georgia,serif;line-height:1;text-shadow:0 0 6px rgba(0,0,0,0.85)}
+  .coords-col.r{left:auto;right:8px}
+  .coords-row.t{bottom:auto;top:8px}
+  body.light-mode .coord{color:#6b4c12;text-shadow:none}
 
   /* STATUS */
   .status-bar { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding:7px 12px; background:rgba(0,0,0,0.32); border:1px solid rgba(201,168,76,0.1); border-radius:4px; font-size:0.72rem; color:var(--text-silver); font-style:italic; }
@@ -352,10 +361,13 @@
 
   /* Phone */
   @media(max-width:520px){
-    .cell{width:calc((100vw - 60px)/8);height:calc((100vw - 60px)/8)}
-    .piece{width:calc((100vw - 60px)/8 - 2px);height:calc((100vw - 60px)/8 - 2px)}
-    .coords-col{height:calc(8 * ((100vw - 60px)/8));top:16px}
-    .coords-row{width:calc(8 * ((100vw - 60px)/8));left:16px}
+    .cell{width:calc((100vw - 66px)/8);height:calc((100vw - 66px)/8)}
+    .piece{width:calc((100vw - 66px)/8 - 2px);height:calc((100vw - 66px)/8 - 2px)}
+    .coords-col{height:calc(8 * ((100vw - 66px)/8));top:16px;left:4px}
+    .coords-col.r{left:auto;right:4px}
+    .coords-row{width:calc(8 * ((100vw - 66px)/8));left:16px;bottom:2px}
+    .coords-row.t{bottom:auto;top:2px}
+    .coord{font-size:0.7rem}
     .board-container{padding:16px}
     .title-main{font-size:1.6rem}
     .title-sub{font-size:0.7rem;letter-spacing:0.2em}
@@ -392,11 +404,11 @@
 
   /* ── COPYRIGHT BAR ── */
   .copyright-bar {
-    position:fixed; bottom:14px; left:50%; transform:translateX(-50%);
+    position:static; justify-content:center; margin:14px auto 18px;
     display:flex; align-items:center; gap:6px;
     font-family:'Cormorant Garamond',serif; font-size:0.72rem;
     color:var(--text-silver); opacity:0.55;
-    z-index:40; pointer-events:none;
+    z-index:40;
     transition:opacity 0.3s; white-space:nowrap;
     letter-spacing:0.05em;
   }
@@ -435,6 +447,38 @@
     color:rgba(180,80,255,0.85); letter-spacing:0.15em;
     white-space:nowrap; pointer-events:none;
     animation:fadeIn 0.5s ease;
+  }
+
+  /* ── ONLINE ── */
+  #chessboard.flip { transform:rotate(180deg); }
+  #chessboard.flip .piece { transform:rotate(180deg); }
+  #chessboard.flip .cell::before { transform:rotate(180deg); }
+  .board-container.flip .coords-col { flex-direction:column-reverse; }
+  .board-container.flip .coords-row { flex-direction:row-reverse; }
+  .status-bar { gap:10px; flex-wrap:wrap; }
+  .fab.net-on { border-color:#4fd68a; box-shadow:0 0 14px rgba(79,214,138,0.55); }
+  .net-modal { padding:30px 26px; width:min(92vw,400px); }
+  .net-modal h2 { font-size:1.3rem; }
+  .net-lbl { font-family:'Cinzel Decorative',serif; font-size:0.62rem; letter-spacing:0.12em; color:var(--gold); margin:14px 0 8px; }
+  .net-colors { display:flex; gap:10px; }
+  .net-colors button, .net-row button, .net-modal .net-wide { flex:1; padding:11px 10px; border-radius:6px; border:1px solid rgba(201,168,76,0.35); background:rgba(201,168,76,0.06); color:var(--text-main); font-family:'Cinzel Decorative',serif; font-size:0.7rem; letter-spacing:0.08em; cursor:pointer; }
+  .net-colors button[aria-pressed="true"] { border-color:var(--gold); background:rgba(201,168,76,0.22); box-shadow:0 0 12px rgba(201,168,76,0.35); }
+  .net-modal .net-wide { width:100%; margin-top:12px; }
+  .net-modal .net-wide.main { background:rgba(201,168,76,0.25); border-color:var(--gold); color:var(--gold); }
+  .net-modal .net-wide:disabled, .net-row button:disabled { opacity:0.45; cursor:default; }
+  .net-or { color:var(--text-silver); font-style:italic; font-size:0.9rem; margin:14px 0 8px; }
+  .net-row { display:flex; gap:8px; }
+  .net-row input { flex:1.2; min-width:0; padding:10px; border-radius:6px; border:1px solid rgba(201,168,76,0.35); background:rgba(0,0,0,0.3); color:var(--text-main); font-size:1.1rem; font-weight:700; text-align:center; letter-spacing:0.18em; text-transform:uppercase; }
+  #net-code-big { font-family:'Cinzel Decorative',serif; font-size:clamp(2.4rem,13vw,3.2rem); color:var(--gold); letter-spacing:0.14em; margin:14px 0 4px; text-shadow:0 0 24px rgba(201,168,76,0.5); }
+  #net-code-big:empty { display:none; }
+  #net-status { color:var(--text-silver); font-size:0.9rem; min-height:1.3em; margin-top:10px; overflow-wrap:anywhere; }
+  body.light-mode .net-row input { background:rgba(255,255,255,0.6); }
+  @media(max-width:900px){
+    /* En el móvil: botones redondos bajo el título (no tapan los hechizos) y copyright al final */
+    header .floating-actions { position:static; flex-direction:row; justify-content:center; margin-top:12px; }
+    .copyright-bar { position:static; transform:none; justify-content:center; margin:14px auto 18px; pointer-events:auto; }
+    /* En online con negras, tu reino va justo debajo del tablero */
+    body.me-black .game-layout > .side-panel:last-child { order:0; }
   }
 
   /* ── SHUFFLE ANIMATION ── */
@@ -485,6 +529,14 @@
     <div class="title-main"><span id="easter-caos" onclick="easterCaos()" style="cursor:pointer" title="...">CAOS</span> REAL</div>
     <div class="title-sub">Ajedrez de los Reinos Arcanos</div>
     <div class="divider"></div>
+<!-- FLOATING BUTTONS -->
+<div class="floating-actions">
+  <button class="fab" onclick="openInfo()"><span>ℹ</span><span class="fab-tooltip">Información y hechizos</span></button>
+  <button class="fab" id="theme-toggle" onclick="toggleLightDark()" title="Modo claro/oscuro"><span id="theme-icon">☀</span><span class="fab-tooltip">Modo claro/oscuro</span></button>
+  <button class="fab" onclick="openCustom()"><span>🎨</span><span class="fab-tooltip">Personalizar tablero</span></button>
+  <button class="fab" id="net-fab" onclick="openNet()"><span>🌐</span><span class="fab-tooltip">Jugar online</span></button>
+</div>
+
   </header>
 
   <div class="game-layout">
@@ -518,8 +570,18 @@
           <span class="coord">5</span><span class="coord">4</span><span class="coord">3</span>
           <span class="coord">2</span><span class="coord">1</span>
         </div>
+        <div class="coords-col r">
+          <span class="coord">8</span><span class="coord">7</span><span class="coord">6</span>
+          <span class="coord">5</span><span class="coord">4</span><span class="coord">3</span>
+          <span class="coord">2</span><span class="coord">1</span>
+        </div>
         <div id="chessboard"></div>
         <div class="coords-row">
+          <span class="coord">a</span><span class="coord">b</span><span class="coord">c</span>
+          <span class="coord">d</span><span class="coord">e</span><span class="coord">f</span>
+          <span class="coord">g</span><span class="coord">h</span>
+        </div>
+        <div class="coords-row t">
           <span class="coord">a</span><span class="coord">b</span><span class="coord">c</span>
           <span class="coord">d</span><span class="coord">e</span><span class="coord">f</span>
           <span class="coord">g</span><span class="coord">h</span>
@@ -556,13 +618,6 @@
       <div style="margin-top:10px"><div class="panel-title">📜 Crónicas</div><div class="log-box" id="log-black"></div></div>
     </div>
   </div>
-</div>
-
-<!-- FLOATING BUTTONS -->
-<div class="floating-actions">
-  <button class="fab" onclick="openInfo()"><span>ℹ</span><span class="fab-tooltip">Información y hechizos</span></button>
-  <button class="fab" id="theme-toggle" onclick="toggleLightDark()" title="Modo claro/oscuro"><span id="theme-icon">☀</span><span class="fab-tooltip">Modo claro/oscuro</span></button>
-  <button class="fab" onclick="openCustom()"><span>🎨</span><span class="fab-tooltip">Personalizar tablero</span></button>
 </div>
 
 <!-- COPYRIGHT -->
@@ -639,6 +694,26 @@
   </div>
 </div>
 
+<!-- ONLINE -->
+<div class="overlay" id="net-overlay">
+  <div class="modal net-modal" role="dialog" aria-modal="true" aria-label="Partida online">
+    <button class="info-close" onclick="closeNet()">✕</button>
+    <h2>🌐 Partida online</h2>
+    <div id="net-setup">
+      <div class="net-lbl">Tu reino</div>
+      <div class="net-colors">
+        <button id="net-c-white" aria-pressed="true" onclick="pickNetColor('white')">☀️ Luz</button>
+        <button id="net-c-black" aria-pressed="false" onclick="pickNetColor('black')">🌑 Sombra</button>
+      </div>
+      <button class="net-wide main" id="net-create" onclick="netCreate()">Crear partida</button>
+      <div class="net-or">o únete con el código de tu rival</div>
+      <div class="net-row"><input id="net-code" maxlength="4" placeholder="K7P2" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Código de la partida"><button id="net-join" onclick="netJoin(document.getElementById('net-code').value)">Unirse</button></div>
+    </div>
+    <div id="net-code-big"></div>
+    <div id="net-status" aria-live="polite"></div>
+    <button class="net-wide" id="net-leave" onclick="netLeave(true)" style="display:none">Salir de la partida online</button>
+  </div>
+</div>
 <!-- CONFIRM -->
 <div id="confirm-overlay">
   <div class="confirm-modal">
@@ -667,7 +742,7 @@
     <div class="modal-icon" id="modal-icon">👑</div>
     <h2 id="modal-title">¡Victoria!</h2>
     <p id="modal-text">El reino ha caído</p>
-    <button class="btn-gold" onclick="initGame()">⚔ Nueva Partida</button>
+    <button class="btn-gold" onclick="doRestart()">⚔ Nueva Partida</button>
   </div>
 </div>
 
@@ -1057,7 +1132,7 @@ function initBoard() {
 
 function confirmRestart(){document.getElementById('confirm-overlay').classList.add('show')}
 function closeConfirm(){document.getElementById('confirm-overlay').classList.remove('show')}
-function doRestart(){closeConfirm();initGame()}
+function doRestart(){if(netGate('restart',[]))return;closeConfirm();initGame()}
 
 function initGame(){
   initBoard();currentPlayer='white';selectedCell=null;validMoves=[];
@@ -1169,6 +1244,7 @@ function getValidMoves(r,c){
 
 function onCellClick(r,c){
   if(gameOver)return;
+  if(netGate('click',[r,c]))return;
   if(activeSpell){handleSpellClick(r,c);return;}
   const piece=board[r][c],key=r+','+c;
   if(selectedCell){const[sr,sc]=selectedCell;const mv=validMoves.find(m=>m[0]===r&&m[1]===c);if(mv){executeMove(sr,sc,r,c,mv[2]);return;}}
@@ -1282,6 +1358,8 @@ function switchTurn(){currentPlayer=currentPlayer==='white'?'black':'white';move
 //  SPELLS
 // ══════════════════════════════════════════════════════════
 function activateSpell(spell,player){
+  if(NET&&NET.on&&!REPLAY&&player!==NET.me)return;
+  if(netGate('spell',[spell,player]))return;
   if(player!==currentPlayer){addLog('No es tu turno.',player,'special');return;}
   const cost=SPELL_COSTS[spell];
   if(mana[player]<cost){addLog(`Maná insuficiente (necesitas ${cost}).`,player,'special');return;}
@@ -1291,6 +1369,7 @@ function activateSpell(spell,player){
   const inst={teleport:'✨ Selecciona tu pieza a teletransportar',freeze:'❄️ Selecciona pieza enemiga a congelar',revive:'💀 Selecciona una casilla vacía para invocar un peón (no fila 1 ni 8)',necro:'💀 Selecciona el Peón que deseas encantar como Nigromante'};
   document.getElementById('status-msg').textContent=inst[spell];
 }
+function userCancelSpell(){if(netGate('cancel',[]))return;cancelSpell();}
 function cancelSpell(){activeSpell=null;spellStep=0;spellData={};document.querySelectorAll('.spell-btn').forEach(b=>b.classList.remove('active'));updateUI();}
 function handleSpellClick(r,c){
   const player=spellData.player,cost=SPELL_COSTS[activeSpell],enemy=player==='white'?'b':'w',own=player[0];
@@ -1350,6 +1429,11 @@ function updateUI(){
   document.getElementById('turn-black').style.borderColor=!w?'rgba(201,168,76,0.5)':'rgba(201,168,76,0.1)';
   document.getElementById('move-count').textContent=`Turno ${moveCount}`;
   document.getElementById('status-msg').textContent=currentPlayer==='white'?'Selecciona una pieza blanca':'Selecciona una pieza negra';
+  if(NET&&NET.on){
+    const mine=currentPlayer===NET.me;
+    for(const p of['white','black'])document.getElementById('turn-'+p).querySelector('.turn-text').textContent=(p===NET.me?'Tú':'Rival')+' · '+(p==='white'?'Blancas':'Negras')+' · '+(currentPlayer===p?(p===NET.me?'TU TURNO':'Pensando…'):'Esperando');
+    if(!mine)document.getElementById('status-msg').textContent='⏳ Turno de tu rival…';
+  }
   for(const player of['white','black']){
     const own = player[0];
     const ownPawn = own+'P';
@@ -1358,7 +1442,7 @@ function updateUI(){
     document.querySelectorAll(`[data-player="${player}"]`).forEach(btn=>{
       const spell=btn.dataset.spell;
       if(!spell) return;
-      let disabled = (player!==currentPlayer)||(mana[player]<SPELL_COSTS[spell]);
+      let disabled = (player!==currentPlayer)||(mana[player]<SPELL_COSTS[spell])||(NET&&NET.on&&player!==NET.me);
       if(spell==='revive' && pawnCount>=8) disabled=true;
       btn.disabled=disabled;
     });
@@ -1371,6 +1455,7 @@ function updateCapturedDisplay(){
 function addLog(text,player,type=''){const log=document.getElementById('log-'+player);const e=document.createElement('div');e.className='log-entry'+(type?' '+type:'');e.textContent=text;log.insertBefore(e,log.firstChild);if(log.children.length>30)log.removeChild(log.lastChild);}
 // ── PROMOTION MODAL
 function showPromotionModal(own){
+  if(NET&&NET.on&&own!==NET.me[0]){document.getElementById('status-msg').textContent='👑 Tu rival está coronando un peón…';return;}
   const overlay = document.getElementById('promotion-overlay');
   overlay.style.display = 'flex';
   const choices = document.getElementById('promotion-choices');
@@ -1387,6 +1472,7 @@ function showPromotionModal(own){
 }
 
 function applyPromotion(pieceCode){
+  if(netGate('promo',[pieceCode]))return;
   document.getElementById('promotion-overlay').style.display='none';
   if(!pendingPromotion) return;
   const {r,c,own} = pendingPromotion;
@@ -1403,7 +1489,7 @@ function showVictory(winner){document.getElementById('modal-icon').textContent=w
 function cn(r,c){return 'abcdefgh'[c]+(8-r);}
 function pn(code){if(!code)return'?';const names={K:'Rey',Q:'Reina',R:'Torre',B:'Alfil',N:'Caballo',P:'Peón'};return(code[0]==='w'?'⬜':'⬛')+names[code[1]];}
 
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(activeSpell)cancelSpell();if(document.getElementById('info-overlay').classList.contains('show'))closeInfo();if(document.getElementById('custom-panel').classList.contains('open'))closeCustom();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(activeSpell)userCancelSpell();if(document.getElementById('info-overlay').classList.contains('show'))closeInfo();if(document.getElementById('custom-panel').classList.contains('open'))closeCustom();}});
 
 // ══════════════════════════════════════════════════════════
 //  LIGHT / DARK MODE
@@ -1423,6 +1509,7 @@ let caosClickCount = 0;
 let caosClickTimer = null;
 
 function easterCaos(){
+  if(NET&&NET.on)return;
   caosClickCount++;
   clearTimeout(caosClickTimer);
   caosClickTimer = setTimeout(()=>{ caosClickCount=0; }, 800);
@@ -1466,7 +1553,7 @@ const SECRET_CODE = 'jcaselas';
 document.addEventListener('keydown', e => {
   if(e.key.length !== 1) return;
   secretBuffer = (secretBuffer + e.key.toLowerCase()).slice(-SECRET_CODE.length);
-  if(secretBuffer === SECRET_CODE){
+  if(secretBuffer === SECRET_CODE && !(NET&&NET.on)){
     secretBuffer = '';
     triggerJcaselasShuffle();
   }
@@ -1515,7 +1602,117 @@ function showEasterToast(msg){
   setTimeout(()=>t.classList.remove('show'), 3000);
 }
 
+// ══════════════════════════════════════════════════════════
+//  PARTIDA ONLINE (PeerJS): cada jugador en su dispositivo.
+//  Cada acción (clic, hechizo, coronación, reinicio) se envía al
+//  rival, que la reproduce igual: el juego no tiene azar.
+// ══════════════════════════════════════════════════════════
+let NET=null, REPLAY=false, netColor='white';
+const NET_AB='ABCDEFGHJKLMNPQRSTUVWXYZ23456789', NET_PJ='https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js';
+const netLoad=()=>window.Peer?Promise.resolve():new Promise((ok,ko)=>{const e=document.createElement('script');e.src=NET_PJ;e.onload=ok;e.onerror=ko;document.head.appendChild(e);});
+const netSt=t=>{document.getElementById('net-status').textContent=t;};
+const netBusy=b=>{document.getElementById('net-create').disabled=document.getElementById('net-join').disabled=b;};
+function netSend(o){try{if(NET&&NET.c&&NET.on)NET.c.send(o);}catch(e){}}
+/* Devuelve true si la acción debe bloquearse (no es tu turno). Si se permite, la envía al rival. */
+function netGate(n,a){
+  if(!NET||!NET.on||REPLAY)return false;
+  if(n!=='restart'&&currentPlayer!==NET.me)return true;
+  netSend({t:'act',n,a});
+  return false;
+}
+function netApply(d){
+  REPLAY=true;
+  try{
+    if(d.n==='click')onCellClick(d.a[0],d.a[1]);
+    else if(d.n==='spell')activateSpell(d.a[0],d.a[1]);
+    else if(d.n==='cancel')cancelSpell();
+    else if(d.n==='promo')applyPromotion(d.a[0]);
+    else if(d.n==='restart'){closeConfirm();initGame();}
+  }finally{REPLAY=false;}
+}
+function pickNetColor(c){netColor=c;document.getElementById('net-c-white').setAttribute('aria-pressed',c==='white');document.getElementById('net-c-black').setAttribute('aria-pressed',c==='black');}
+function netView(){
+  const on=!!(NET&&NET.on),black=on&&NET.me==='black';
+  document.getElementById('chessboard').classList.toggle('flip',black);
+  document.querySelector('.board-container').classList.toggle('flip',black);
+  document.body.classList.toggle('me-black',black);
+  document.getElementById('net-fab').classList.toggle('net-on',on);
+  document.getElementById('net-setup').style.display=on?'none':'';
+  document.getElementById('net-leave').style.display=on?'':'none';
+  if(on){document.getElementById('net-code-big').textContent='';netSt('Conectado · Partida '+NET.code+' · Eres '+(NET.me==='white'?'☀️ Luz (blancas)':'🌑 Sombra (negras)')+'.');}
+}
+function openNet(){
+  if(!(NET&&NET.on)){if(!NET){netBusy(false);document.getElementById('net-code-big').textContent='';netSt('');}pickNetColor(netColor);}
+  netView();
+  document.getElementById('net-overlay').classList.add('show');
+}
+function closeNet(){
+  if(NET&&!NET.on)netLeave(false);
+  document.getElementById('net-overlay').classList.remove('show');
+}
+function netLeave(close){
+  if(NET){netSend({t:'bye'});const n=NET;NET=null;clearTimeout(n.to);try{n.c&&n.c.close();n.peer&&n.peer.destroy();}catch(e){}}
+  netView();updateUI();renderBoard();
+  if(close)document.getElementById('net-overlay').classList.remove('show');
+}
+function netStart(){
+  if(boardMirrored)easterCaos();
+  netView();initGame();
+  document.getElementById('net-overlay').classList.remove('show');
+  showEasterToast(NET.me==='white'?'☀️ Juegas con la Luz · ¡empiezas tú!':'🌑 Juegas con la Sombra · empieza la Luz');
+}
+function netWire(c){
+  NET.c=c;
+  c.on('data',d=>{
+    if(!NET||!d)return;
+    if(d.t==='cfg'){NET.on=true;clearTimeout(NET.to);NET.me=d.host==='white'?'black':'white';netStart();}
+    else if(d.t==='act')netApply(d);
+    else if(d.t==='bye'){NET.on=false;netGone();}
+  });
+  c.on('close',()=>{if(NET&&NET.c===c){const was=NET.on;NET.on=false;if(was)netGone();else netSt('Se perdió la conexión.');}});
+}
+function netGone(){
+  showEasterToast('Tu rival se ha desconectado · la partida sigue en este dispositivo');
+  NET=null;netView();updateUI();renderBoard();
+}
+async function netCreate(){
+  netLeave(false);netBusy(true);
+  const code=[0,0,0,0].map(()=>NET_AB[Math.random()*32|0]).join('');
+  NET={code,me:netColor,on:false};const me=NET;
+  document.getElementById('net-code-big').textContent=code;netSt('Conectando…');
+  try{
+    await netLoad();if(NET!==me)return;
+    NET.peer=new Peer('caosreal-'+code);
+    NET.peer.on('open',()=>{if(NET===me)netSt('Tu rival: 🌐 → escribe '+code+' → «Unirse». Esperando…'+(location.protocol.startsWith('http')?' Enlace: '+location.href.split('#')[0]+'#'+code:''));});
+    NET.peer.on('connection',c=>{
+      if(NET!==me||NET.c){c.on('open',()=>c.close());return;}
+      netWire(c);
+      c.on('open',()=>{NET.on=true;c.send({t:'cfg',host:NET.me});netStart();});
+    });
+    NET.peer.on('error',e=>{if(NET===me&&!NET.on){netSt(e.type==='unavailable-id'?'Ese código está ocupado: pulsa otra vez «Crear partida».':'No hay conexión a internet. El juego online necesita internet.');document.getElementById('net-code-big').textContent='';netBusy(false);NET=null;}});
+  }catch(e){netSt('No hay conexión a internet. El juego online necesita internet.');netBusy(false);NET=null;}
+}
+async function netJoin(v){
+  const code=(v||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(code.length!==4||[...code].some(x=>NET_AB.indexOf(x)<0)){netSt('El código son 4 letras o números, por ejemplo K7P2.');return;}
+  netLeave(false);netBusy(true);document.getElementById('net-code-big').textContent='';
+  netSt('Buscando la partida '+code+'…');
+  NET={code,me:null,on:false};const me=NET;
+  const fail=t=>{if(NET!==me||NET.on)return;netSt(t);netBusy(false);netLeave(false);};
+  NET.to=setTimeout(()=>fail('No encuentro esa partida: revisa el código y que tu rival la tenga abierta.'),12000);
+  try{
+    await netLoad();if(NET!==me)return;
+    NET.peer=new Peer();
+    NET.peer.on('open',()=>{if(NET!==me)return;const c=NET.peer.connect('caosreal-'+code,{reliable:true});netWire(c);c.on('open',()=>{if(NET===me)netSt('¡Conectado! Empezando…');});});
+    NET.peer.on('error',e=>fail(e.type==='peer-unavailable'?'No encuentro esa partida: revisa el código y que tu rival la tenga abierta.':'No hay conexión a internet. El juego online necesita internet.'));
+  }catch(e){fail('No hay conexión a internet. El juego online necesita internet.');}
+}
+document.getElementById('net-code').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('net-join').click();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.getElementById('net-overlay').classList.contains('show'))closeNet();});
+
 initGame();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))navigator.serviceWorker.register('sw.js').catch(()=>{});
+{const h=location.hash.slice(1);if(/^[A-Za-z0-9]{4}$/.test(h)){openNet();document.getElementById('net-code').value=h.toUpperCase();netJoin(h);}}
 </script>
 </body>
 </html>
